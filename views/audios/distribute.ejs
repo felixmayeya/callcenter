@@ -1,0 +1,208 @@
+<style>
+  .dropdown.selection .text{
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .ui.selection.dropdown .menu{
+    overflow-x: auto;
+  }
+  #studyProgress{
+    position: relative;
+    width: 300px;
+    margin-bottom: 0;
+  }
+  #studyProgress .bar{
+    position: relative;
+    overflow: hidden;
+    z-index: 3;
+  }
+  #studyProgress span,#studyProgress em{
+    display: block;
+    position: absolute;
+    top:0;
+    left: 0;
+    width: 300px;
+    height: 24.5px;
+    line-height: 24.5px;
+    text-align: center;
+  }
+  #studyProgress span{
+    z-index: 4;
+  }
+  #studyProgress em{
+    font-style: normal;
+    z-index: 2;
+  }
+</style>
+
+<div class="ui form">
+  <div class="four fields">
+    <div class="field">
+      <label>呼叫时间</label>
+      <input type="text" class='datarangeInput' name="daterange" placeholder="选择时间" data-from="<%= from%>" data-to="<%= to%>">
+    </div>
+    <div class="field">
+      <label>录音</label>
+      <select name="audio_id" class="ui fluid dropdown" data-value="<%= audio_id %>" id="audio_id">
+        <option value="all">全部录音</option>
+        <%
+          for (var i in audios) {
+            var _audios = audios[i];
+        %>
+        <option value="<%=_audios['audio_id']%>"><%=_audios['audio_seq']%></option>
+            <%
+        }
+        %>
+      </select>
+    </div>
+    <div class="field">
+      <label>坐席</label>
+      <select name="sit_number" class="ui fluid dropdown" data-value="<%= sit_number %>" id="sit_number">
+        <option value="all">全部坐席</option>
+        <%
+          for (var i in sitList) {
+            var _sitList = sitList[i];
+        %>
+        <option value="<%=_sitList['sit_number']%>"><%=_sitList['username']%></option>
+            <%
+        }
+        %>
+      </select>
+    </div>
+    <div class="field">
+      <label>学习状态</label>
+      <select name="status" class="ui dropdown" data-value="<%= status %>">
+        <option value="all">全部状态</option>
+        <option value="0">未学习</option>
+        <option value="1">已学习</option>
+        <option value="3">学习中</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit button" onclick="search()">
+        <i class="icon search"></i>
+        搜索
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+  <table class="ui small very basic table insTable">
+    <thead>
+      <tr>
+        <th>序号</th>
+        <th>录音流水号</th>
+        <th>坐席</th>
+        <th>上次学习时长</th>
+        <th>本次学习时长</th>
+        <th>累计学习时长</th>
+        <th>累计学习次数</th>
+        <th>学习状态</th>
+        <th style="min-width:300px">学习进度</th>
+        <th>创建时间</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if(rows && rows.length>0) { %>
+        <%
+          for(i in rows){
+            row = rows[i]
+        %>
+          <tr data-id="<%=row['_id']%>" data-status="<%=row['status']%>">
+            <td><%= Number(offset)+Number(i)+1 %></td>
+            <td><%=row['audio_seq']%></td>
+            <td><%=row['username']%></td>
+            <td><%= common.secondToTime(row.last_study_duration/1000) %></td>
+            <td><%= common.secondToTime(row.study_duration/1000) %></td>
+            <td><%= common.secondToTime(row.total_study_duration/1000) %></td>
+            <td><%=row['study_count']%></td>
+            <td>
+              <%
+                if(row['status'] == 0){
+              %>
+                  <div class="ui tiny red label">未学习</div>
+              <%
+                  }else if(row['status'] == 1){
+              %>
+              <div class="ui tiny blue label">已学习</div>
+              <%
+                  }else if(row['status'] == 3){
+              %>
+                  <div class="ui tiny yellow label">学习中</div>
+              <%
+                }
+              %>
+            </td>
+            <td>
+              <div class="ui teal progress" id="studyProgress" data-member="<%=row.total_study_duration%>" data-denominator="<%=row.call_duration%>">
+                <div class="bar"><span>累计学习时长</span></div><em>录音时长 <%= common.secondToTime(row.call_duration/1000) %></em>
+              </div>
+            </td>
+            <td><%=common.format_date(row['created_time'], 'yyyy-MM-dd hh:mm:ss')%></td>
+          </tr>
+        <% } %>
+      <% } else { %>
+        <tr>
+          <td colspan="4" style="text-align:center;">暂无数据</td>
+        </tr>
+      <% } %>
+
+    </tbody>
+  </table>
+</div>
+<%-common.paging("/audios/distribute", "from="+from+"&to="+to+"&status="+status+"&audio_id=" + audio_id + "&sit_number=" + sit_number, totalPage, offset, limit, 5)%>
+
+<script>
+  console.log(<%- JSON.stringify(rows)%>);
+  var from, to;
+  $(function() {
+    activeUrl();
+    //init search query
+    initSearchQuery()
+
+    //初始化下拉框
+    $('.ui.dropdown').dropdown();
+
+    //初始化日期
+    initDatePicker();
+
+    $('#studyProgress').each(function(){
+      var member = $('#studyProgress').attr("data-member"),denominator = $(this).attr("data-denominator");
+      var _percent = (Number(member)/Number(denominator)).toFixed(2)*100;
+      $('#studyProgress').progress({
+        percent: _percent
+      });
+    })
+  });
+
+  //搜索
+  function search() {
+    if($('.datarangeInput').val()!=="选择时间"){
+      var dateRange = $('.datarangeInput').val().split('至');
+      from = parseInt(moment(dateRange[0].trim()).valueOf());
+      to = parseInt(moment(dateRange[1].trim()).valueOf());
+    }
+
+    location.href = encodeURI("?from=" + from + "&to=" + to + "&status=" + $('select[name="status"]').val() + "&audio_id=" + $('select[name="audio_id').val() + "&sit_number=" + $('select[name="sit_number').val() + "&limit=" + <%= limit %>);
+  }
+
+  //初始化search query
+  function initSearchQuery() {
+    $('select[name="status"]').val($('select[name="status"]').attr('data-value'))
+    $('select[name="sit_number"]').val($('select[name="sit_number"]').attr('data-value'))
+    $('select[name="audio_id"]').val($('select[name="audio_id"]').attr('data-value'))
+    from = $('input[name="daterange"]').attr('data-from')
+    to = $('input[name="daterange"]').attr('data-to')
+    from = from !== ''?Number(from):'';
+    to = to!==''?Number(to):'';
+    //设定input默认时间
+    if (from !== '' && to !== '') {
+      $('input[name="daterange"]').val(moment(from).format('YYYY-MM-DD HH:mm') + " 至 " + moment(to).format('YYYY-MM-DD HH:mm'));
+    } else {
+      $('input[name="daterange"]').val('选择时间');
+    }
+  }
+</script>

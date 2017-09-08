@@ -1,0 +1,716 @@
+<style>
+  #create_modal,#edit_modal{
+    width: 500px;
+    margin-left: -250px;
+  }
+  #create_modal .dropdown.selection,#edit_modal .dropdown.selection {
+    width: 500px;
+  }
+  #upload_modal{
+    width: 400px;
+    margin-left: -200px;
+  }
+</style>
+
+<div class="ui form">
+  <div class="five fields">
+    <div class="field">
+      <label>业务组</label>
+      <select name="user_group" class="ui dropdown" data-value="<%=user_group%>">
+        <option value="all">全部业务组</option>
+        <%
+          for (var i in groups) {
+            var _groups = groups[i];
+        %>
+        <option value="<%=_groups['_id']%>"><%=_groups['name']%></option>
+            <%
+        }
+        %>
+      </select>
+    </div>
+    <div class="field">
+      <label>角色</label>
+      <select name="role" class="ui dropdown" data-value="<%=role%>">
+        <option value="all">全部角色</option>
+        <%
+          for (var i in roles) {
+            var _roles = roles[i];
+        %>
+        <option value="<%=_roles['role_id']%>"><%=_roles['name']%></option>
+            <%
+        }
+        %>
+      </select>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit button" onclick="search()">
+        <i class="icon search"></i> 搜索
+      </div>
+    </div>
+    <div class="field"></div>
+    <div class="right floated field clearfix" style="width:400px;padding-top:25px">
+      <button class="ui blue right floated button" onclick="create();">
+        <i class="icon write"></i>
+        新增用户
+      </button>
+      <button class="ui blue right floated button" onclick="csvUpload()">
+        <i class="icon file excel"></i>
+        批量导入用户
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+  <table class="ui small very basic table">
+    <thead>
+      <tr>
+        <th>用户名</th>
+        <th>业务组</th>
+        <th>角色</th>
+        <th>创建时间</th>
+        <th width="100"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <%
+        if (rows && rows.length > 0) {
+        %>
+        <%
+          for (var i in rows) {
+            var row = rows[i];
+        %>
+          <tr>
+            <td>
+              <%=row['username']%>
+            </td>
+            <td>
+              <%
+              var group_name = '';
+              groups.forEach(function(group){
+                if(row.user_group == group._id){
+                  group_name = group.name;
+                }
+              });
+              %>
+              <%=group_name%>
+            </td>
+            <td>
+              <%
+              var role_name = '';
+              roles.forEach(function(role){
+                if(row.role == role.role_id){
+                  role_name = role.name;
+                }
+              });
+              %>
+              <%=role_name%>
+            </td>
+            <td>
+              <%=common.format_date(row['created'], 'yyyy-MM-dd hh:mm:ss')%>
+            </td>
+            <td style="text-align:right;">
+              <a href="javascript:;" onclick="init('<%=row['_id']%>');">初始化</a> &nbsp;&nbsp;
+              <a href="javascript:;" onclick="edit('<%=row['_id']%>');">编辑</a> &nbsp;&nbsp;
+              <a href="javascript:;" onclick="del('<%=row['_id']%>');">删除</a>
+            </td>
+          </tr>
+          <%
+          }
+          %>
+
+          <% } else { %>
+          <tr>
+            <td colspan="4" style="text-align:center;">暂无数据</td>
+          </tr>
+          <% } %>
+    </tbody>
+  </table>
+</div>
+
+<%-common.paging("/users", "user_group="+user_group+"&role="+role, totalPage, offset, limit, 5)%>
+
+<div class="ui modal" id="create_modal">
+  <i class="close icon"></i>
+  <div class="tiny header">
+    新增用户
+  </div>
+  <div class="content">
+    <form class="ui form" id="create_form">
+      <div class="field">
+        <label class="required_input">用户名</label>
+        <div class="ui left input">
+          <input type="text" onKeyup="spec(this);checkLength(this);" id="username" onblur="distinct(this,'/users')" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">密码</label>
+        <div class="ui left input">
+          <input type="password" onKeyup="spec(this);checkLength(this);" id="password" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">业务组</label>
+        <div class="ui left input">
+          <select id="user_group" class="ui dropdown" >
+            <%
+            groups.forEach(function(group){
+              %>
+              <option value="<%=group._id%>"><%=group.name%></option>
+              <%
+            })
+            %>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">角色</label>
+        <div class="ui left input">
+          <select id="role" class="ui dropdown" >
+            <%
+            roles.forEach(function(role){
+              %>
+              <option value="<%=role.role_id%>"><%=role.name%></option>
+              <%
+            })
+            %>
+          </select>
+        </div>
+      </div>
+      <div class="field" id="sitfield" style="display:none">
+        <label class="required_input">坐席工号</label>
+        <div class="ui left input">
+          <input type="text" onKeyup="spec(this);checkLength(this);sitDistinct(this);" id="sitnumber" />
+        </div>
+      </div>
+    </form>
+    <div class="ui hidden divider"></div>
+  </div>
+  <div class="actions">
+    <div class="ui black deny button">取消</div>
+    <div class="ui positive right labeled icon button">保存<i class="checkmark icon"></i></div>
+  </div>
+</div>
+
+<div class="ui modal" id="edit_modal">
+  <i class="close icon"></i>
+  <div class="tiny header">
+    用户
+  </div>
+  <div class="content">
+    <form class="ui form" id="edit_form">
+      <input type="hidden" id="_id" />
+      <div class="field">
+        <label class="required_input">用户名</label>
+        <div class="ui left input">
+          <input type="text" onKeyup="spec(this);checkLength(this);" id="username" onblur="checkIt(this)" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">业务组</label>
+        <div class="ui left input">
+          <select id="user_group" class="ui dropdown" >
+            <%
+            groups.forEach(function(group){
+              %>
+              <option value="<%=group._id%>"><%=group.name%></option>
+              <%
+            })
+            %>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">角色</label>
+        <div class="ui left input">
+          <select id="role" class="ui dropdown" >
+            <%
+            roles.forEach(function(role){
+              %>
+              <option value="<%=role.role_id%>"><%=role.name%></option>
+              <%
+            })
+            %>
+          </select>
+        </div>
+      </div>
+      <div class="field" id="sitfield" style="display:none">
+        <label class="required_input">坐席工号</label>
+        <div class="ui left input">
+          <input type="text" onKeyup="spec(this);checkLength(this);checkSit(this);" id="sitnumber" />
+        </div>
+      </div>
+    </form>
+    <div class="ui hidden divider"></div>
+  </div>
+  <div class="actions">
+    <div class="ui black deny button">取消</div>
+    <div class="ui positive right labeled icon button">保存<i class="checkmark icon"></i></div>
+  </div>
+</div>
+
+<div class="ui modal" id="upload_modal">
+  <i class="close icon"></i>
+  <div class="tiny header">
+    导入用户文件及表头设置
+  </div>
+  <div class="content">
+    <form class="ui form" id= "uploadForm">
+        <div class="field">
+          <div class="ui left input">
+            <input type="file" name="file" id="uploadFile" />
+          </div>
+        </div>
+        <h4 class="ui horizontal divider header"> 表头名称配置 </h4>
+        <div class="field clearfix editpa" style="line-height:36px;display:none;">
+          当前配置：<span></span>
+          <div class="ui yellow right floated button" onclick="showSet()">重新配置</div>
+        </div>
+        <div class="field newpa">
+          <label class="required_input">配置名</label>
+          <div class="ui left input">
+            <input type="text" name="setname" onKeyup="spec(this);checkLength(this);"/>
+          </div>
+        </div>
+        <div class="field newpa">
+          <label class="required_input">用户名</label>
+          <div class="ui left input">
+            <input type="text" name="username" onKeyup="spec(this);checkLength(this);"/>
+          </div>
+        </div>
+        <div class="field newpa">
+          <label class="required_input">密码</label>
+          <div class="ui left input">
+            <input type="text" name="password" onKeyup="spec(this);checkLength(this);"/>
+          </div>
+        </div>
+        <div class="field newpa">
+          <label class="required_input">坐席工号</label>
+          <div class="ui left input">
+            <input type="text" name="sit_number" onKeyup="spec(this);checkLength(this);"/>
+          </div>
+        </div>
+        <div class="field newpa">
+          <label class="required_input">业务组</label>
+          <div class="ui left input">
+            <input type="text" name="user_group" onKeyup="spec(this);checkLength(this);"/>
+          </div>
+        </div>
+        <div class="field clearfix newpa">
+          <div class="ui blue right floated button" onclick="saveSet()">保存配置</div>
+        </div>
+    </form>
+  </div>
+  <div class="actions">
+    <div class="ui black deny button">取消</div>
+    <div class="ui positive right labeled icon button" onclick="fileUp()">保存<i class="checkmark icon"></i></div>
+  </div>
+</div>
+
+<script src="/js/ajaxfileupload.js"></script>
+<script type="text/javascript">
+  var Val = "",sitVal = "";
+  var userConfig = <%- JSON.stringify(userConfig)%>;
+  $(function() {
+    //设置菜单为选中状态
+    activeUrl();
+    $('select[name="user_group"]').val("<%=user_group%>");
+    $('select[name="role"]').val("<%=role%>");
+    $(".dropdown").dropdown();
+    if(userConfig !== null){
+      $(".newpa").hide();
+      $(".editpa").show();
+      $(".editpa>span").text(userConfig.config_name);
+    }
+
+  });
+
+  function search(){
+    location.href=encodeURI("?user_group="+$('select[name="user_group"]').val()+"&role="+$('select[name="role"]').val()+"&limit=<%=limit%>");
+  }
+
+  function checkIt(obj){
+    if($(obj).val() === Val || $(obj).val() === ""){
+      return false;
+    }else{
+      distinct(obj,'/users');
+    }
+  }
+
+  function checkSit(obj){
+    if($(obj).val() === sitVal || $(obj).val() === ""){
+      return false;
+    }else{
+      sitDistinct(obj);
+    }
+  }
+
+  var sitDistinct = function(obj) {
+    var _name = $(obj);
+    if(_name.val() === ""){
+      return false;
+    }
+    $.ajax({
+      type:'get',
+      url: '/users/validate/sitnumber/'+_name.val(),
+      success:function(data){
+        if(data.status !== 20000){
+          _name.val("");
+          swal("名称已存在，请更改", "", "warning");
+        }
+      }
+    })
+  };
+
+  function csvUpload(){
+    $('#upload_modal').modal({'autofocus':false,'closable':false,onApprove:function(){return false}}).modal('show');
+    if(userConfig !== null){
+      $(".newpa").hide();
+      $(".editpa").show();
+      $(".editpa>span").text(userConfig.config_name);
+    }
+  }
+
+  function showSet(){
+    $(".editpa").hide();
+    $(".newpa").show();
+  }
+
+  function saveSet(){
+
+    var username = $("input[name='username']", "#upload_modal").val();
+    var password = $("input[name='password']", "#upload_modal").val();
+    var user_group = $("input[name='user_group']", "#upload_modal").val();
+    var sit_number = $("input[name='sit_number']", "#upload_modal").val();
+    var setname = $("input[name='setname']", "#upload_modal").val();
+    if (username === "" || password === "" || user_group === "" || sit_number === "" || setname === "") {
+      swal("请填写完整的表头配置!", "", "warning");
+      return false;
+    }
+
+    var _data = {
+      config_name: setname,
+      username: username,
+      password: password,
+      user_group: user_group,
+      sit_number: sit_number
+    }
+    $.ajax({
+      type: "post",
+      url: "/users/userconfig",
+      data:_data,
+      success: function(data) {
+        if (data.code === '20000') {
+          swal({
+              title: data.msg,
+              text: "",
+              type: "success",
+              confirmButtonText: "确定",
+            },function(){
+              $(".newpa").hide();
+              $(".editpa").show();
+              $(".editpa>span").text(setname);
+            });
+        }else{
+          swal({
+              title: data.msg,
+              text: "",
+              type: "error",
+              confirmButtonText: "确定",
+            });
+        }
+      },
+      error: function(err) {
+        swal("配置失败,请重试", "", "error");
+      }
+    });
+
+  }
+
+  function fileUp(){
+    $.ajaxFileUpload({
+        url: '/batch/import/user', //用于文件上传的服务器端请求地址
+        secureuri: false, //是否需要安全协议，一般设置为false
+        fileElementId: 'uploadFile', //文件上传域的ID
+        dataType: 'json', //返回值类型 一般设置为json
+        success: function (data){
+          if (data.code === '20000') {
+            swal({
+                title: data.msg,
+                text: "",
+                type: "success",
+                confirmButtonText: "确定",
+              },
+              function() {
+                setTimeout(function() {
+                  location.reload();
+                }, 330);
+              });
+          }else{
+            swal({
+                title: data.msg,
+                text: "",
+                type: "error",
+                confirmButtonText: "确定",
+              });
+          }
+        },
+        error: function (data, status, e){
+            swal("上传失败请重试","","error")
+        }
+    })
+  }
+
+  //初始化密码
+  function init(id){
+    swal({
+        title: "确定要初始化该用户的密码吗",
+        text: "",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          $.ajax({
+            type: "put",
+            url: "/users/init/password/" + id,
+            success: function(data) {
+              if (data.code === '20000') {
+                swal({
+                    title: data.msg,
+                    text: "",
+                    type: "success",
+                    confirmButtonText: "确定",
+                  });
+              }else{
+                swal({
+                    title: data.msg,
+                    text: "",
+                    type: "error",
+                    confirmButtonText: "确定",
+                  });
+              }
+            },
+            error: function(err) {
+              swal("初始化失败,请重试", "", "error");
+            }
+          });
+      }
+    });
+  }
+
+  $("#role", "#create_form").change(function(){
+      if($(this).val() === "omni"){
+        $("#sitfield", "#create_form").show();
+      }else{
+        $("#sitfield", "#create_form").hide();
+      }
+  })
+  $("#role", "#edit_form").change(function(){
+      if($(this).val() === "omni"){
+        $("#sitfield", "#edit_form").show();
+      }else{
+        $("#sitfield", "#edit_form").hide();
+      }
+  })
+
+  //创建应用
+  function create() {
+    $('#create_modal').modal({
+      onApprove: function() {
+        var username = $("#username", "#create_form").val();
+        var password = $("#password", "#create_form").val();
+        var role = $("#role", "#create_form").val();
+        var user_group = $("#user_group", "#create_form").val();
+        var sit_number = $("#sitnumber", "#create_form").val();
+
+        if (username == "") {
+          swal("请填写用户名!", "", "warning");
+          return false;
+        }
+
+        if (password == "") {
+          swal("请填写密码!", "", "warning");
+          return false;
+        }
+
+        if (role == "") {
+          swal("请选择角色!", "", "warning");
+          return false;
+        }
+
+        if (user_group == "") {
+          swal("请选择业务组!", "", "warning");
+          return false;
+        }
+
+        if (role === "omni" && sit_number == "") {
+          swal("请填写坐席工号!", "", "warning");
+          return false;
+        }
+
+        var params = {
+          username: username,
+          password: hex_md5(password),
+          role: role,
+          user_group: user_group,
+          sit_number: sit_number
+        };
+
+        $.post("/users", params, function(data, status) {
+          if (status == "success") {
+            swal({
+                title: "操作成功",
+                text: "",
+                type: "success",
+                confirmButtonText: "确定",
+              },
+              function() {
+                setTimeout(function() {
+                  location.reload();
+                },330);
+              });
+          } else {
+            swal(data, "", "error");
+          }
+        }).error(function(err) {
+          swal(err.responseText, "", "error");
+        });
+
+        return false;
+      }
+    }).modal('show');
+  }
+
+  //编辑
+  function edit(id){
+    $.get("/users/"+id, function(data, status) {
+      if (status == "success") {
+        if(data.role === "omni"){
+          $("#sitfield", "#edit_form").show();
+        }
+        Val = data.username;
+        sitVal = data.sit_number;
+        $("#_id", "#edit_modal").val(data._id);
+        $("#username", "#edit_modal").val(data.username);
+        $("#user_group", "#edit_modal").dropdown("set selected",data.user_group);
+        $("#role", "#edit_modal").dropdown("set selected",data.role);
+        $("#sitnumber", "#edit_modal").val(data.sit_number);
+
+        $('#edit_modal').modal({
+          onApprove: function() {
+            var _id = $("#_id", "#edit_modal").val();
+            var username = $("#username", "#edit_form").val();
+            var role = $("#role", "#edit_form").val();
+            var user_group = $("#user_group", "#edit_form").val();
+            var sit_number = $("#sitnumber", "#edit_form").val();
+
+            if (username == "") {
+              swal("请填写用户名!", "", "warning");
+              return false;
+            }
+
+            if (role == "") {
+              swal("请选择角色!", "", "warning");
+              return false;
+            }
+
+            if (user_group == "") {
+              swal("请选择业务组!", "", "warning");
+              return false;
+            }
+
+            if (role === "omni" && sit_number == "") {
+              swal("请填写坐席工号!", "", "warning");
+              return false;
+            }
+
+            var params = {
+              username: username,
+              role: role,
+              user_group: user_group,
+              sit_number: sit_number
+            };
+
+            $.ajax({
+              type: "put",
+              url: "/users/" + id,
+              data: params,
+              success: function(data) {},
+              complete: function(XMLHttpRequest, status) {
+                if (status == "success") {
+                  swal({
+                      title: "操作成功",
+                      text: "",
+                      type: "success",
+                      confirmButtonText: "确定",
+                    },
+                    function() {
+                      setTimeout(function() {
+                        location.reload();
+                      }, 330);
+                    });
+                }
+              },
+              error: function(err) {
+                swal(err.responseText, "", "error");
+              }
+            });
+
+            return false;
+          }
+        }).modal('show');
+      } else {
+        swal(data, "", "error");
+      }
+    });
+  }
+
+  //删除应用
+  function del(id) {
+    swal({
+        title: "确定要删除吗",
+        text: "",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          $.ajax({
+            type: "delete",
+            url: "/users/" + id,
+            success: function(data) {},
+            complete: function(XMLHttpRequest, status) {
+              if (status == "success") {
+                swal({
+                    title: "操作成功",
+                    text: "",
+                    type: "success",
+                    confirmButtonText: "确定",
+                  },
+                  function() {
+                    setTimeout(function() {
+                      location.reload();
+                    }, 330);
+                  });
+              }
+            },
+            error: function(err) {
+              swal(err.responseText, "", "error");
+            }
+          });
+      }
+    });
+  }
+</script>

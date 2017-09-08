@@ -1,0 +1,305 @@
+<style>
+  #create_modal,#edit_modal{
+    width: 500px;
+    margin-left: -250px;
+  }
+</style>
+
+<div class="field clearfix">
+  <button class="ui blue right floated button" onclick="create();">
+    <i class="icon write"></i>
+    新增角色
+  </button>
+</div>
+
+<div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+  <table class="ui small very basic table">
+    <thead>
+      <tr>
+        <th>角色名称</th>
+        <th>角色标识</th>
+        <th>描述</th>
+        <th>创建时间</th>
+        <th width="100"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <%
+        if (rows && rows.length > 0) {
+        %>
+        <%
+          for (var i in rows) {
+            var row = rows[i];
+        %>
+          <tr>
+            <td>
+              <%=row['name']%>
+            </td>
+            <td>
+              <%=row['role_id']%>
+            </td>
+            <td>
+              <%=row['description'] %>
+            </td>
+            <td>
+              <%=common.format_date(row['created'], 'yyyy-MM-dd hh:mm:ss')%>
+            </td>
+            <td style="text-align:right;">
+              <a href="javascript:;" onclick="edit('<%=row['_id']%>');">编辑</a> &nbsp;&nbsp;
+              <a href="javascript:;" onclick="del('<%=row['_id']%>');">删除</a>
+            </td>
+          </tr>
+          <%
+          }
+          %>
+
+          <% } else { %>
+          <tr>
+            <td colspan="4" style="text-align:center;">暂无数据</td>
+          </tr>
+          <% } %>
+    </tbody>
+  </table>
+</div>
+
+<%-common.paging("/users/roles", "", totalPage, offset, limit, 5)%>
+
+<div class="ui modal" id="create_modal">
+  <i class="close icon"></i>
+  <div class="tiny header">
+    新增角色
+  </div>
+  <div class="content">
+    <form class="ui form" id="create_form">
+      <div class="field">
+        <label class="required_input">名称</label>
+        <div class="ui left input">
+          <input type="text" onKeyup="spec(this);checkLength(this);" id="name" onBlur="distinct(this,'/users/roles')" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">角色标识</label>
+        <div class="ui left input">
+          <input type="text" onKeyup="spec(this);checkLength(this);" id="role_id" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">描述</label>
+        <div class="ui left input">
+          <input type="text" onKeyup="spec(this);checkLength(this);" id="description" />
+        </div>
+      </div>
+    </form>
+    <div class="ui hidden divider"></div>
+  </div>
+  <div class="actions">
+    <div class="ui black deny button">取消</div>
+    <div class="ui positive right labeled icon button">保存<i class="checkmark icon"></i></div>
+  </div>
+</div>
+
+<div class="ui modal" id="edit_modal">
+  <i class="close icon"></i>
+  <div class="tiny header">
+    编辑角色
+  </div>
+  <div class="content">
+    <form class="ui form" id="edit_form">
+      <div class="field">
+        <label class="required_input">名称</label>
+        <div class="ui left input">
+          <input type="hidden" id="_id" />
+          <input type="text" onKeyup="spec(this);checkLength(this);" id="name" onBlur="checkIt(this)" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">描述</label>
+        <div class="ui left input">
+          <input type="text" onKeyup="spec(this);checkLength(this);" id="description" />
+        </div>
+      </div>
+    </form>
+    <div class="ui hidden divider"></div>
+  </div>
+  <div class="actions">
+    <div class="ui black deny button">取消</div>
+    <div class="ui positive right labeled icon button">保存<i class="checkmark icon"></i></div>
+  </div>
+</div>
+
+<script type="text/javascript">
+  var Val = "";
+
+  $(function() {
+    activeUrl();
+  });
+
+  function checkIt(obj){
+    if($(obj).val() === Val || $(obj).val() === ""){
+      return false;
+    }else{
+      distinct(obj,'/users/roles');
+    }
+  }
+
+  //创建应用
+  function create() {
+    $('#create_modal').modal({
+      onApprove: function() {
+        var name = $("#name", "#create_form").val();
+        var role_id = $("#role_id", "#create_form").val();
+        var description = $("#description", "#create_form").val();
+
+        if (name == "") {
+          swal("请填写名称!", "", "warning");
+          return false;
+        }
+
+        if (role_id == "") {
+          swal("请填写角色标识!", "", "warning");
+          return false;
+        }
+
+        if (description == "") {
+          swal("请填写描述!", "", "warning");
+          return false;
+        }
+
+        var params = {
+          name: name,
+          role_id: role_id,
+          description: description
+        };
+
+        $.post("/users/roles", params, function(data, status) {
+          if (status == "success") {
+            swal({
+                title: "操作成功",
+                text: "",
+                type: "success",
+                confirmButtonText: "确定",
+              },
+              function() {
+                setTimeout(function() {
+                  location.reload();
+                }, 330);
+              });
+          } else {
+            swal(data, "", "error");
+          }
+        }).error(function(err) {
+          swal(err.responseText, "", "error");
+        });
+
+        return false;
+      }
+    }).modal('show');
+  }
+
+  //编辑
+  function edit(id){
+    $.get("/users/roles/"+id, function(data, status) {
+      if (status == "success") {
+        Val = data.name;
+
+        $("#_id", "#edit_modal").val(data._id);
+        $("#name", "#edit_modal").val(data.name);
+        $("#description", "#edit_modal").val(data.description);
+
+        $('#edit_modal').modal({
+          onApprove: function() {
+            var _id = $("#_id", "#edit_modal").val();
+            var name = $("#name", "#edit_modal").val();
+            var description = $("#description", "#edit_modal").val();
+
+            if (name == "") {
+              swal("请填写名称!", "", "warning");
+              return false;
+            }
+
+            if (description == "") {
+              swal("请填写描述!", "", "warning");
+              return false;
+            }
+
+            var params = {
+              name: name,
+              description: description
+            };
+
+            $.ajax({
+              type: "put",
+              url: "/users/roles/" + id,
+              data: params,
+              success: function(data) {},
+              complete: function(XMLHttpRequest, status) {
+                if (status == "success") {
+                  swal({
+                      title: "操作成功",
+                      text: "",
+                      type: "success",
+                      confirmButtonText: "确定",
+                    },
+                    function() {
+                      setTimeout(function() {
+                        location.reload();
+                      }, 330);
+                    });
+                }
+              },
+              error: function(err) {
+                swal(err.responseText, "", "error");
+              }
+            });
+
+            return false;
+          }
+        }).modal('show');
+      } else {
+        swal(data, "", "error");
+      }
+    });
+  }
+
+  //删除应用
+  function del(id) {
+    swal({
+        title: "确定要删除吗",
+        text: "",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          $.ajax({
+            type: "delete",
+            url: "/users/roles/" + id,
+            success: function(data) {},
+            complete: function(XMLHttpRequest, status) {
+              if (status == "success") {
+                swal({
+                    title: "操作成功",
+                    text: "",
+                    type: "success",
+                    confirmButtonText: "确定",
+                  },
+                  function() {
+                    setTimeout(function() {
+                      location.reload();
+                    }, 330);
+                  });
+              }
+            },
+            error: function(err) {
+              swal(err.responseText, "", "error");
+            }
+          });
+      }
+    });
+  }
+</script>

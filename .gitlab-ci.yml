@@ -1,0 +1,8 @@
+stages:
+  - deploy_production
+deploy_production:
+  stage: deploy_production
+  only:
+    - master
+  script:
+    - sh /home/gitlab-runner/update.sh

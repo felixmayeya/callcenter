@@ -1,0 +1,136 @@
+<div class="ui form">
+  <div class="four fields" style="margin-bottom:0;">
+    <div class="field">
+      <label>请输入关键字</label>
+      <input type="text" id="keyword" placeholder="例如输入:短信 流量" value="<%=name%>">
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <button class="ui blue button" onclick="search()"><i class='icon search'></i>查询</button>
+    </div>
+  </div>
+</div>
+<div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+  <table class='ui small very basic table taskTable'>
+    <thead>
+      <tr>
+        <th>序号</th>
+        <th>录音流水号</th>
+        <th>坐席工号</th>
+        <th>坐席组</th>
+        <th>呼叫时间</th>
+        <th>所属业务</th>
+        <th>话后总结</th>
+        <th>满意度评价</th>
+        <th>操作历史</th>
+        <th>通话总时长</th>
+        <th>静音比</th>
+        <th>用户语速</th>
+        <th>坐席语速</th>
+        <th>静音总时长</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (rows && rows.length > 0) { %>
+        <%
+          for (var i in rows) {
+            var row = rows[i];
+        %>
+          <tr>
+            <td data-id="<%=row['_id']%>">
+              <%=parseInt(i)+1%>
+            </td>
+            <td>
+              <%=row['_source']['seq']%>
+            </td>
+            <td>
+              <%=row['_source']['sit_number']%>
+            </td>
+            <td>
+              <%=row['_source']['sit_team']%>
+            </td>
+            <td>
+              <%=row['_source']['call_time']%>
+            </td>
+            <td>
+              <%= common.get_sys_name(row['_source']['system'], systemList) %>
+            </td>
+            <td>
+              <%=row['_source']['end_comment']%>
+            </td>
+            <td>
+              <%=row['_source']['satisfy_comment']%>
+            </td>
+            <td>
+              <%=row['_source']['os_history']%>
+            </td>
+            <td>
+              <%=common.secondToTime(row['_source']['call_duration']/1000)%>
+            </td>
+            <td>
+              <%=row['_source']['mute_ratio']%>
+            </td>
+            <td>
+              <%=row['_source']['customer_speed']%>
+            </td>
+            <td>
+              <%=row['_source']['agent_speed']%>
+            </td>
+            <td>
+              <%=row['_source']['mute_duration']/1000%>秒
+            </td>
+          </tr>
+          <tr>
+            <td><a href="javascript:;" onclick="showAudio('<%= row._id %>')">播放</a></td>
+            <td class='ui accordion' colspan=16>
+              <div class="title">
+                <i class="dropdown icon"></i>
+                <div style="display:inline-block;width:1200px;overflow: hidden; white-space: nowrap; text-overflow: ellipsis;vertical-align: middle;">
+                  <%if(row['highlight']){%>
+                    <%-row['highlight']['dialog_text']%>
+                  <%}else if(name=="*"){%>
+                    <%-row['_source']['dialog_text']%>
+                  <%}%>
+                </div>
+              </div>
+              <div class="content" style="white-space: normal !important;padding-right:15px;">
+                <p style="text-indent: 2em;">
+                  <%if(row['highlight']){%>
+                    <%-row['highlight']['dialog_text']%>
+                  <%}else if(name=="*"){%>
+                    <%-row['_source']['dialog_text']%>
+                  <%}%>
+                </p>
+              </div>
+            </td>
+          </tr>
+        <% } %>
+      <% } else { %>
+        <tr>
+          <td colspan="14" style="text-align:center;">暂无数据</td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<%-common.paging("/search", "name="+name, total, offset, limit, 5)%>
+<% include ../inspections/audio_play_modal %>
+<script type="text/javascript">
+
+$(function(){
+  activeUrl();
+});
+
+function search(){
+  if($("#keyword").val()!==''){
+    location.href="/search?name="+$("#keyword").val();
+  }else{
+    swal("","请输入搜索关键字","warning")
+  }
+}
+$('.ui.accordion')
+  .accordion()
+;
+
+</script>

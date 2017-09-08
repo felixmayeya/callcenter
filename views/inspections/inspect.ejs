@@ -1,0 +1,865 @@
+<link rel="stylesheet" href="/js/wavesurfer/style.css" />
+<link rel="stylesheet" href="/js/wavesurfer/ribbon.css" />
+<style>
+  .lrc-current { color:#E65D6E; }
+  .lrc-area { overflow-y:auto;height:500px;}
+  .lrc-area ul li {cursor: pointer;}
+  .audio-player {
+    width:100%;
+    height:36px;
+    background: #404040;
+    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #444), color-stop(0.5, #555), color-stop(0.51, #444), color-stop(1, #444));
+  }
+  .audio-player i { margin:0;}
+  a.play-pause { display: block;padding: 9px 10px 7px 10px;border-right: 1px solid #000;color: #fff; cursor:pointer;float: left;opacity: 0.8;}
+  a.play-pause:hover {opacity: 1;color: #fff;}
+
+  .audio-info {float: right;height: 36px;line-height: 36px;color:#fff;opacity: 0.8;padding: 0 8px;border-left:solid 1px #000;font-size:12px;}
+  .audio-volume {position: relative;float:right;}
+  .audio-volume>a.audio-volume-btn {display:block;height:36px;line-height:36px;padding:0 10px;border-left:solid 1px #000;font-size: 16px;color: #fff;opacity: 0.8;}
+  .audio-volume>a.audio-volume-btn:hover {opacity: 1;cursor: pointer;}
+  .volume-bar  {position: absolute;left: 8px;bottom: 100%;box-sizing: content-box;width: 8px;height: 64px;padding: 8px;display: block;background-color: #444;border: 1px solid #222;border-radius: 2px;z-index: 999;}
+  .volume-bar-ajust {display: block;position: relative;width: 100%;height: 100%;cursor: pointer;box-shadow: -1px -1px 0 rgba( 0, 0, 0, 0.5 ), 1px 1px 0 rgba( 255, 255, 255, 0.1 );}
+  .volume-bar-ajust-active { display: block;position: absolute;left: 0px;bottom: 0px;width: 100%;height: 48%;background-color: #fcc500;}
+
+  .audio-play-rate {position:relative;float:right;}
+  .audio-play-rate>a.play-rate-btn {display:block;height:36px;line-height:36px;padding:0 10px;color:#fff;font-size:12px;opacity: 0.8;cursor:pointer;border-left:solid 1px #000;}
+  .audio-play-rate>a.play-rate-btn:hover {opacity:1;}
+
+  ul.play-rate-list {position: absolute;left: 0;bottom: 100%;box-sizing: border-box;display: block;width:100%;background-color: #444;border: 1px solid #222;border-radius: 2px;z-index: 999;list-style:none;margin: 0;color: #fff;padding: 3px 0;font-size: 12px;}
+  ul.play-rate-list > li {padding:3px 0;text-align:center;cursor:pointer;}
+  ul.play-rate-list > li:hover {background:#fcc500}
+  ul.play-rate-list > li.active {background:#fcc500}
+
+  input[name='getScore']{
+    border:none!important;
+  }
+</style>
+<div class="ui breadcrumb">
+  <div class="section"><i class="angle right icon"></i>录音质检</div>
+  <div class="divider"> / </div>
+  <div class="active section"><%= title %></div>
+</div>
+<div class='ui hidden divider'></div>
+<div class="ui grid">
+  <div class="eight wide column">
+    <div class="ui top attached tabular menu">
+      <a class="item active" data-tab="first">录音信息</a>
+      <a class="item" data-tab="second">违规点信息</a>
+      <a class="item" data-tab="third">标准话术</a>
+    </div>
+    <div class="ui bottom attached tab segment active" data-tab="first">
+      <table class='ui small very basic table taskTable'>
+        <tbody>
+          <tr>
+            <td>录音流水号：</td>
+            <td>
+              <%= audioInfo._id %>
+            </td>
+            <td>时长：</td>
+            <td>
+              <%= common.secondToTime(audioInfo.call_duration/1000) %>
+            </td>
+          </tr>
+          <tr>
+            <td>呼叫时间：</td>
+            <td>
+              <%= common.format_date(audioInfo.call_time, 'yyyy-MM-dd hh:mm:ss') %>
+            </td>
+            <td>总静音时长：</td>
+            <td>
+              <%= audioInfo.mute_duration %>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ui bottom attached tab segment" data-tab="second">
+      <table class='ui small very basic table taskTable'>
+        <thead>
+          <tr>
+            <th>规则名称</th>
+            <th>规则短语</th>
+            <th>所扣分值</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if(audioInfo.machine_result&&audioInfo.machine_result.length>0) { %>
+            <%
+              for(i in audioInfo.machine_result) {
+                var machineResult = audioInfo.machine_result[i]
+            %>
+            <tr>
+              <td><%= machineResult.rule_name %></td>
+              <td><%= machineResult.rule_content %></td>
+              <td><%= machineResult.rule_score %></td>
+            </tr>
+            <% } %>
+          <% } else { %>
+            <tr>
+              <td colspan="3" style="text-align:center;">暂无数据</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+    <div class="ui bottom attached tab segment" data-tab="third">
+      <table class='ui small very basic table taskTable'>
+        <thead>
+          <tr>
+            <th>话术名称</th>
+            <th>可信度（0-100）</th>
+          </tr>
+        </thead>
+        <tbody>
+          <%
+            for(var i in trickRules) {
+              var trickRule = trickRules[i]
+          %>
+          <tr>
+            <td><%= trickRule.name %></td>
+            <td><%= trickRule.threshold*100 %></td>
+          </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+    <div id="waveform">
+    </div>
+    <div class="audio-player">
+      <a class="play-pause">
+        <i class="pause icon"></i>
+      </a>
+      <div class="audio-volume">
+        <a class="audio-volume-btn">
+          <i class="volume up icon"></i>
+        </a>
+        <div class="volume-bar hidden" style="display:none">
+          <div class="volume-bar-ajust">
+            <div class="volume-bar-ajust-active"></div>
+          </div>
+        </div>
+      </div>
+      <div class="audio-play-rate">
+        <a href="javascript:void(0)" class="play-rate-btn" >
+          播放速度
+        </a>
+        <ul class="play-rate-list" style="display:none">
+          <li class="rate-item" data-value="1.5">1.5</li>
+          <li class="rate-item" data-value="1.2">1.2</li>
+          <li class="rate-item active" data-value="1">正常</li>
+          <li class="rate-item" data-value="0.8">0.8</li>
+          <li class="rate-item" data-value="0.5">0.5</li>
+        </ul>
+      </div>
+      <div class="audio-info">
+        <span class="current-time">00:00</span>&nbsp;/&nbsp;<span class="duration">00:00</span>
+      </div>
+    </div>
+    <div class="list-group" id="playlist">
+        <a href="<%= audioInfo.radio_path %>" class="list-group-item">
+          <i class="glyphicon glyphicon-play"></i>
+        </a>
+    </div>
+    <div class="ui grey segment lrc-area" id='emotion_cont' data-cont='<%= JSON.stringify(audioInfo.dialog_json.sentence) %>'>
+      <ul class="ui list audio-text ">
+      </ul>
+      <textarea rows="10" cols="121" style="text-align:left;display:none;" class="lrc-content">
+        <%= JSON.stringify(audioInfo.dialog_json) %>
+      </textarea>
+      <textarea rows="10" cols="121" style="text-align:left;display:none;" class="lrc-keywords">
+        <%= JSON.stringify(audioInfo.keywords) %>
+      </textarea>
+    </div>
+  </div>
+  <div class="eight wide column">
+    <div class="ui stacked segment">
+      <table class="ui small very basic table rules-form">
+        <thead>
+          <tr>
+            <th>选择</th>
+            <th>所属类型</th>
+            <th>分类总分</th>
+            <th>常用扣分原因</th>
+            <th>所扣分数</th>
+            <th>所得分数</th>
+            <!--th>备注</th-->
+          </tr>
+        </thead>
+        <tbody>
+          <% if(rules && rules.length>0) {%>
+            <%
+                for(var i in rules){
+                  rule = rules[i]
+              %>
+              <tr>
+                <td>
+                  <div class="ui checkbox">
+                    <input class="rule-<%= i %>" type="checkbox" tabindex="0" class="hidden">
+                  </div>
+                </td>
+                <td>
+                  <%= rule.type %>
+                </td>
+                <td>
+                  <%= rule.score %>
+                </td>
+                <td>
+                  <select name="deductReason" class="ui fluid dropdown deduct-reason" style="width:120px;white-space:nowrap;" disabled>
+                    <%
+                        for(var j = 0;j < rule.reasons.length;j++) {
+                          var ruleReason = rule.reasons[j]
+                      %>
+                      <option value="<%= ruleReason %>">
+                        <%= ruleReason %>
+                      </option>
+                      <% } %>
+                  </select>
+                </td>
+                <td>
+                  <div class="ui fluid input">
+                    <input type="text" name="deductScore" style="width:80px" data-index="<%= i %>" data-score="<%= rule.score %>" disabled>
+                  </div>
+                </td>
+                <td>
+                    <div class="ui fluid input">
+                      <input type="text" name="getScore" style="width:80px" value="<%= rule.score %>" readonly disabled>
+                    </div>
+                </td>
+              </tr>
+              <% } %>
+                <% } %>
+        </tbody>
+      </table>
+      <div class='ui divider'></div>
+      <div class="ui form reasons-form">
+        <div class="two fields">
+          <%
+            if (reasons && reasons.length > 0) {
+            %>
+              <div class="field">
+                <%
+                  for (var i in reasons) {
+                    var _reason = reasons[i];
+                    if(i%2 === 0){
+                %>
+                  <div class="field" style="margin-bottom:14px;">
+                    <div class="ui checkbox">
+                      <input type="checkbox" tabindex="0" class="hidden" value="<%= _reason['labelType']+','+ _reason['labelDetail'] %>">
+                      <label>
+                        <%= _reason['labelType']+'（'+_reason['labelDetail']+'）' %>
+                      </label>
+                    </div>
+                  </div>
+                    <%
+                  }}
+                %>
+              </div>
+              <div class="field">
+                <%
+                  for (var i in reasons) {
+                    var _reason = reasons[i];
+                    if(i%2 === 1){
+                %>
+                  <div class="field" style="margin-bottom:14px;">
+                    <div class="ui checkbox">
+                      <input type="checkbox" tabindex="0" class="hidden" value="<%= _reason['labelType']+','+ _reason['labelDetail'] %>">
+                      <label>
+                        <%= _reason['labelType']+'（'+_reason['labelDetail']+'）' %>
+                      </label>
+                    </div>
+                  </div>
+                    <%
+                  }}
+                %>
+              </div>
+          <% }%>
+        </div>
+        <!-- <div class="ui hidden divider"></div> -->
+        <!-- <div class="inline fields">
+          <div class="field">
+            <label>附加分备注</label>
+            <input type="text" placeholder="附加分备注" class="addition-score-remark">
+          </div>
+        </div> -->
+        <div class="ui hidden divider"></div>
+        <div class="two fields">
+          <div class="inline field">
+            <div class="ui mini statistics">
+              <div class="statistic" style="margin-bottom:0;">
+                <div class="value personScore">
+                  <%= audioInfo.person_score %>
+                </div>
+                <div class="label">人工分 </div>
+              </div>
+              <div class="statistic" style="margin-bottom:0;">
+                <div class="value">
+                  <%= audioInfo.machine_score %>
+                </div>
+                <div class="label">智能分 </div>
+              </div>
+              <!-- <div class="statistic">
+                <div class="value">
+                  0
+                </div>
+                <div class="label">附加分 </div>
+              </div> -->
+            </div>
+          </div>
+          <div class="inline field">
+            <button class="ui button right floated" onclick="back()">返回</button>
+            <button class="ui blue button right floated" style="margin-right:10px" onclick="submitForm()">提交</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="/js/wavesurfer/wavesurfer.min.js"></script>
+<script src="/js/wavesurfer/wavesurfer.regions.js"></script>
+<script src="/js/wavesurfer/util.js"></script>
+<script>
+var personResult = {};
+var emotionTimeList = [];
+$(function() {
+  $("#demo-list a").each(function(){
+    if($(this).attr("href") === "/inspect/<%= session.user._id %>"){
+      $(this).parents("ul").show();
+      $(this).parents("li").addClass("activeMenu");
+      $(this).parents("ul").siblings("a").addClass("submenu-indicator-minus");
+    }
+  })
+  $('.menu .item').tab();
+  $('.ui.checkbox').checkbox();
+  var emotion_cont = $('#emotion_cont').attr('data-cont');
+  if(emotion_cont !== ""){
+    var em = JSON.parse(emotion_cont);
+    for(var i = 0;i < em.length;i++){
+      if(em[i].emotion_type !== ""){
+        emotionTimeList.push({start: em[i].start_time/1000,end: em[i].end_time/1000});
+      }
+    }
+  }
+  initAudio()
+  bindDom()
+});
+
+function bindDom() {
+  $(".rules-form").delegate("input[type=checkbox]", "change", function(event) {
+    if($(this).prop("checked")){
+      $(this).parents("tr").find("select,input[name='deductScore'],input[name='getScore']").prop("disabled",false);
+    }else{
+      $(this).parents("tr").find("select,input[name='deductScore'],input[name='getScore']").prop("disabled",true);
+    }
+    personResult = getPersonResult();
+    $('.personScore').html(personResult.personScore)
+  })
+
+  $(".rules-form").delegate("input[name=deductScore]", "keyup", function(event) {
+    var idx = $(this).attr("data-index");
+    var val = $(this).val()
+    var cScore = $(this).attr("data-score");
+    var numericRegex = /^[0-9]+$/
+    if(!numericRegex.test(val)){
+      if($(this).val()===''){
+        swal("请填写分值", "", "error")
+      } else {
+        swal("分值必须为整数", "", "error")
+        $(this).val('')
+        $(this).parents("tr").find("input[name='getScore']").val(cScore)
+      }
+      return false
+    }
+    if(Number(val)>Number(cScore)||val<=0) {
+      swal("分值不能小于等于0，或大于"+cScore, "", "error")
+      $(this).val('')
+      $(this).parents("tr").find("input[name='getScore']").val(cScore)
+      return false
+    }
+
+    if ($(".rule-" + idx).attr("checked") === "checked") {
+      personResult = getPersonResult();
+      $('.personScore').html(personResult.personScore)
+      $(this).parents("tr").find("input[name='getScore']").val(cScore - val)
+    }
+  })
+}
+
+function getPersonResult() {
+  var count = 1;
+  var deductScore = [];
+  var deductReason = [];
+  var remark = [];
+
+  var decreaseReason = '';
+  var totalDeductScore = 0;
+  var personScore = 70;
+  var personSummary = [];
+
+
+  var additionScoreRemark = $(".addition-score-remark").val();
+  //获取所有扣分值
+  $.each($(".rules-form").find("input[name=deductScore]"), function(idx, el) {
+    deductScore.push(Number($(el).val()))
+  })
+  //获取所有扣分原因
+  $.each($(".rules-form").find("select[name=deductReason]"), function(idx, el) {
+    deductReason.push($(el).val())
+  })
+  //获取所有备注
+  // $.each($(".rules-form").find("input[name=remark]"), function(idx, el) {
+  //   remark.push($(el).val())
+  // })
+
+  //根据选中的结果，进行匹配计算所扣分值，以及扣分原因
+  $.each($(".rules-form").find("input[type=checkbox]"), function(idx, el) {
+
+    if ($(el).attr("checked") === "checked") {
+
+      decreaseReason += (count + '.' + deductReason[idx] + '<br>');
+
+      personSummary[count-1] = {
+        deductReason: deductReason[idx],
+        deductScore: deductScore[idx]
+      }
+      totalDeductScore += deductScore[idx];
+
+      count++
+    }
+  })
+
+  personScore = personScore - totalDeductScore;
+
+  return {
+    personScore: personScore,
+    decreaseReason: decreaseReason,
+    remark: remark,
+    personSummary: personSummary,
+    deductScore: deductScore
+  }
+}
+
+function submitForm() {
+  personResult = getPersonResult()
+  var flag = 0;
+  //根据选中的结果，进行匹配计算所扣分值，以及扣分原因
+  $.each($(".rules-form").find("input[type=checkbox]"), function(idx, el) {
+
+    if ($(el).attr("checked") === "checked") {
+      if(personResult.deductScore[idx]===0){
+        swal("请填写已选项分值", "", "error")
+        flag = 1;
+        return false;
+      }
+    }
+  })
+  if(flag){
+    return false
+  }
+  var id = window.location.href.split("/").pop();
+
+  var labels = [];
+  var labelType = '';
+  var labelDetail = '';
+
+  var machineScore = <%= audioInfo.machine_score %>;
+
+  //获取标签结果
+  $.each($(".reasons-form").find("input"), function(idx, el) {
+    if ($(el).attr("checked") === "checked") {
+      labels.push($(el).val())
+    }
+  })
+
+  if (labels && labels.length > 0) {
+    $.each(labels, function(idx, item) {
+      var label = item.split(',');
+      labelType += ((idx+1)+' '+label[0] + '<br>');
+      labelDetail += ((idx+1)+' '+label[1] + '<br>')
+    })
+  }
+
+  var params = {
+    decrease_reason: personResult.decreaseReason || '',
+    person_score: personResult.personScore || 70,
+    machine_score: machineScore,
+    addtional_score: 0,
+    label_type: labelType,
+    label_details: labelDetail,
+    score: personResult.personScore + machineScore + 0,
+    manual_inspection_status: 1,
+    person_result: JSON.stringify(personResult.personSummary)
+  }
+
+  $.ajax({
+    type: "put",
+    url: "/inspection/submit/" + id,
+    data: params,
+    success: function(data) {},
+    complete: function(XMLHttpRequest, status) {
+      if (status == "success") {
+        swal("操作成功", "", "success");
+        location.href="/inspect/<%= session.user._id %>"
+      }
+    },
+    error: function(err) {
+      swal(err.responseText, "", "error");
+    }
+  });
+}
+
+//返回上一页
+function back() {
+  window.history.back();
+}
+
+/**
+ * audio
+ */
+var wavesurfer = WaveSurfer.create({
+  container: '#waveform',
+  waveColor: '#A8DBA8',
+  progressColor: '#3B8686',
+  height: 120,
+  barWidth: 1,
+  scrollParent: true,
+  minPxPerSec:18
+})
+
+var lrcIndex = 0;
+var lrcTime = [];
+var lrcLine = [];
+
+var keywords = JSON.parse($(".lrc-keywords").val())
+var wordList = $.map(keywords, function(item){
+  return item.word
+})
+wordList = _.uniq(wordList)
+
+// 初始化音频播放
+function initAudio() {
+
+  setLrc();
+
+  bindAudioDom();
+
+  //playlist
+  var currentTrack = 0;
+
+  // The playlist links
+  var links = document.querySelectorAll('#playlist a');
+
+  // Load a track by index and highlight the corresponding link
+  var setCurrentSong = function(index) {
+    links[currentTrack].classList.remove('active');
+    currentTrack = index;
+    links[currentTrack].classList.add('active');
+    var audioUrl = links[currentTrack].href
+    if(audioUrl&&audioUrl!=='') {
+      wavesurfer.load(audioUrl);
+    }
+  };
+
+  // Load the track on click
+  Array.prototype.forEach.call(links, function(link, index) {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      setCurrentSong(index);
+    });
+  });
+
+  // Play on audio load
+  wavesurfer.on('ready', function() {
+    var regions = emotionTimeList;
+    // var regions = []
+    addRegion(regions)
+
+    //标注keyword
+    markKeyword(keywords)
+
+    var duration = wavesurfer.getDuration();
+    var durationTxt = secondToTime(duration, "comma");
+    $(".duration").html(durationTxt);
+
+    updateLrc(0);
+    wavesurfer.play();
+  });
+
+  // Go to the next track on finish
+  // wavesurfer.on('finish', function() {
+  //   setCurrentSong((currentTrack + 1) % links.length);
+  // });
+
+  // Load the first track
+  setCurrentSong(currentTrack);
+}
+
+// 音频播放事件绑定
+function bindAudioDom() {
+  var playing = true;
+  var lrcInterval;
+  $(".play-pause").on('click', function(event){
+    wavesurfer.playPause();
+  })
+
+  // Toggle play/pause text
+  wavesurfer.on('play', function() {
+    $(".play-pause").find("i")[0].className = "pause icon";
+    lrcInterval = setInterval(function(){
+      var currentTime = wavesurfer.getCurrentTime()
+      $(".current-time").html(secondToTime(currentTime, "comma"))
+      updateLrc(currentTime)
+    },1000);
+  });
+  wavesurfer.on('pause', function() {
+    $(".play-pause").find("i")[0].className = "play icon";
+    window.clearInterval(lrcInterval);
+  });
+
+  //音量调节
+  var volume = 0.8;
+  var barHeight = 64;
+  var volumeIcon = $(".audio-volume-btn");
+  var muted = false;
+  updateBar($(".volume-bar-ajust-active"), volume, 'height')
+
+  $(".volume-bar-ajust").on('click', function(event){
+    var e = event || window.event;
+    var volumeBar = $(".volume-bar-ajust");
+    var percentage = (barHeight-e.clientY+getElementViewTop(volumeBar)) / barHeight;
+    percentage = percentage > 0 ? percentage : 0;
+    percentage = percentage < 1 ? percentage : 1;
+    volume = percentage
+
+    updateBar($(".volume-bar-ajust-active"), percentage, 'height');
+
+    if(percentage > 0){
+      volumeIcon.find("i")[0].className = "volume up icon"
+    }
+
+    if(percentage === 0){
+      volumeIcon.find("i")[0].className = "volume off icon"
+    }
+
+    wavesurfer.setVolume(volume);
+  })
+
+  //静音开关
+  volumeIcon.on('click', function(event){
+    var vol = volume;
+    if(muted){
+      muted = false;
+      volumeIcon.find('i')[0].className = "volume up icon";
+      updateBar($(".volume-bar-ajust-active"), volume, 'height')
+    }else{
+      muted = true;
+      vol = 0;
+      volumeIcon.find('i')[0].className = "volume off icon";
+      updateBar($(".volume-bar-ajust-active"), 0, 'height')
+    }
+    wavesurfer.setVolume(vol);
+  })
+
+  //volumebar 显示隐藏
+  $(".audio-volume").on('mouseover', function(event){
+    $(".volume-bar").css({
+      "display": "block"
+    })
+  })
+  $(".audio-volume").on('mouseout', function(event){
+    $(".volume-bar").css({
+      "display": "none"
+    })
+  })
+
+   //监听播放速度
+  $(".audio-play-rate").on('mouseover', function(event){
+    $(".play-rate-list").css({
+      "display": "block"
+    })
+  })
+  $(".audio-play-rate").on('mouseout', function(event){
+    $(".play-rate-list").css({
+      "display": "none"
+    })
+  })
+
+  $(".play-rate-list").delegate("li", "click", function(event){
+    $(".play-rate-list").find(".active").removeClass("active");
+    $(this).addClass("active");
+    var rate = Number($(this).attr("data-value"))
+    setPlayRate(rate)
+  })
+
+  // 点击文字跳转到音频对应位置
+  $(".audio-text").delegate("li", "click", function(event){
+    wavesurfer.pause()
+    var sec = $(this).attr("data-second");
+    var totalSec = wavesurfer.getDuration();
+    wavesurfer.seekTo(parseInt(sec/totalSec*100)/100)
+    $(".current-time").html(secondToTime(sec, "comma"))
+    updateLrc(sec)
+    wavesurfer.play();
+  })
+}
+
+//更新音量位置
+function updateBar(el, percentage, direction) {
+  percentage = percentage > 0 ? percentage : 0;
+  percentage = percentage < 1 ? percentage : 1;
+  $(el)[0].style[direction] = percentage*100 + '%';
+}
+
+// 获取el到浏览器顶部的距离
+function getElementViewTop (element) {
+  var actualTop = element[0].offsetTop;
+  var current = element[0].offsetParent;
+  var elementScrollTop;
+  while (current !== null){
+    actualTop += current.offsetTop;
+    current = current.offsetParent;
+  }
+  elementScrollTop = document.body.scrollTop + document.documentElement.scrollTop;
+  return actualTop - elementScrollTop;
+}
+
+//获取音频文本内容并格式化显示
+function setLrc() {
+  var timeExp = /\[(\d{2}):(\d{2})\.(\d{2})]/;
+  var lrcExp = /](.*)$/;
+  var notLrcLineExp = /\[[A-Za-z]+:/;
+  var tpl = ''
+
+  var lrcObj = JSON.parse($(".lrc-content").val());
+  var lines = []
+  if(!lrcObj.sentence||lrcObj.sentence.length===0){
+    return false;
+  }
+  $.each(lrcObj.sentence, function(idx, lrc){
+    var role = lrc.role==1?'坐席':'客戶'
+    var line = '['+secondToTimeFloat(lrc.start_time/1000)+']&nbsp;'+'['+role+']&nbsp;'+lrc.sentence_text;
+    lines.push(line)
+  })
+
+  for (var i = 0; i < lines.length; i++) {
+    lines[i] = lines[i].replace(/^\s+|\s+$/g, '');
+    var oneTime = timeExp.exec(lines[i]);
+    var oneLrc = lrcExp.exec(lines[i]);
+    if(oneTime && oneLrc && !lrcExp.exec(lrcExp.exec(oneLrc[1])[1])){
+      lrcTime.push(parseInt(oneTime[1]) * 60 + parseInt(oneTime[2]) + parseInt(oneTime[3]) / 100);
+      lrcLine.push(oneLrc[1]);
+    }
+    if(wordList&&wordList.length>0){
+      $.each(wordList, function(idx, item){
+        var reg = new RegExp(item, 'g')
+        lines[i]=lines[i].replace(reg, "<span style='color:#54c8ff;'>"+item+"</span>")
+      })
+    }
+    if(i==0){
+      tpl+= '<li class="lrc-current" data-second="'+lrcTime[i]+'">' + lines[i] + '</li>'
+    }else{
+      tpl += '<li data-second="'+lrcTime[i]+'">' + lines[i] + '</li>'
+    }
+  }
+  $(".audio-text").append(tpl)
+}
+
+//更新文字位置
+function updateLrc(currentTime) {
+  if (!currentTime) {
+    var currentTime = wavesurfer.getCurrentTime();
+  }
+
+  if(currentTime === 0){
+    $('.audio-text').css({
+      'transform': 'translateY(' + 0 + 'px)'
+    })
+    return false;
+  }
+
+  if (currentTime < lrcTime[lrcIndex] || currentTime >= lrcTime[lrcIndex + 1]) {
+    for (var i = 0; i < lrcTime.length; i++) {
+      if (currentTime >= lrcTime[i] && (!lrcTime[i + 1] || currentTime < lrcTime[i + 1])) {
+        lrcIndex = i;
+        $('.audio-text').css({
+          'transform': 'translateY(' + -lrcIndex * 22 + 'px)'
+        })
+        $('.lrc-current') && $('.lrc-current').removeClass('lrc-current');
+        var lrcList = $('.audio-text').find('li');
+        if(lrcList&&lrcList.length>0){
+          if(lrcList[i]){
+            lrcList[i].classList.add('lrc-current');
+          }
+        }
+      }
+    }
+  }
+}
+
+
+//添加标注区域
+function addRegion(regions) {
+  if(regions&&regions.length>0){
+    $.each(regions, function(idx, region) {
+      wavesurfer.addRegion({
+        start: region.start,
+        end: region.end,
+        drag: false,
+        color: region.color || "rgba(255,0,0,0.1)"
+      })
+    })
+  }
+}
+
+//调整播放速度
+function setPlayRate(rate) {
+  wavesurfer.setPlaybackRate(rate);
+}
+
+//add 0
+var add0 = function (num) {
+  return num < 10 ? '0' + num : '' + num;
+};
+
+// format second to 00:00.00
+function secondToTimeFloat(second) {
+  var min = parseInt(second / 60);
+  var second = String(parseInt((second - min * 60)*100)/100)
+  var sec = second.split(/\./)[0];
+  var microSec = second.split(/\./)[1];
+
+  if(microSec && microSec.length === 1){
+    microSec = microSec+'0'
+  } else if(!microSec) {
+    microSec = '00'
+  }
+
+  return add0(min) + ':' + add0(sec) + '.' + microSec;
+}
+
+//标注关键词
+function markKeyword(keywords){
+  var keyList = $("#waveform").find("span");
+  if(keyList&&keyList.length>0){
+    $.each(keyList, function(idx, item){
+      $(item).remove();
+    })
+  }
+
+  if(keywords&&keywords.length>0){
+    var w = wavesurfer.drawer.width;
+    var h = $("#waveform").height()
+    var duration = wavesurfer.getDuration();
+    $.each(keywords, function(idx, keyword){
+      if(keyword.time/1000>duration){
+        return false
+      }
+      var percentage = keyword.time/1000/duration
+      var positionX = w * percentage;
+      var positionY = idx % 2 * (h - 45);
+      var tpl = '<span style="position:absolute;font-size:14px;color:#2185d0;z-index:1;white-space:nowrap;display:inline-block;padding:2px 8px;color:#fff;background:#fbbd08;font-size:12px;border-radius:3px;top:'+positionY+'px;left:'+positionX+'px;">'+keyword.word+'</span>'
+      $("#waveform > wave").append(tpl)
+    })
+  }
+}
+</script>

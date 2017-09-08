@@ -1,0 +1,198 @@
+<div class="ui form">
+  <div class="four fields">
+    <div class="field">
+      <label>学习状态</label>
+      <select name="status" class="ui dropdown" data-value="<%= status %>">
+        <option value="all">全部</option>
+        <option value="0">未学习</option>
+        <option value="1">已学习</option>
+        <option value="3">学习中</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit button" onclick="search()">
+        <i class="icon search"></i>
+        搜索
+      </div>
+    </div>
+    <div class="field"></div>
+    <div class="field"></div>
+    <div class="field">
+      <div class="ui blue right floated submit button" onclick="markAsStudy()" style="margin-top:25px;">标为已学</div>
+    </div>
+  </div>
+</div>
+
+<div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+  <table class="ui small very basic table insTable">
+    <thead>
+      <tr>
+        <th>
+          <div class="ui checkbox">
+            <input id="allChecked" type="checkBox">
+            <label></label>
+          </div>
+        </th>
+        <th>序号</th>
+        <th>学习状态</th>
+        <th>录音流水号</th>
+        <th>呼叫时间</th>
+        <th>所属业务</th>
+        <th>客户名称</th>
+        <th>话后总结</th>
+        <th>满意度评价</th>
+        <th>通话总长</th>
+        <th>静音比</th>
+        <th>用户语速</th>
+        <th>坐席语速</th>
+        <th>静音总时长</th>
+        <th style="width:120px;">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if(conts && conts.length>0) { %>
+        <%
+          for(i in conts){
+            cont = conts[i]
+        %>
+          <tr data-id="<%=cont['_id']%>" data-status="<%=cont['status']%>">
+            <td>
+              <div class="ui checkbox">
+                <input type="checkBox">
+                <label></label>
+              </div>
+            </td>
+            <td><%= Number(offset)+Number(i)+1 %></td>
+            <td>
+              <%
+                if(cont['status'] == 0){
+              %>
+                  <div class="ui tiny red label">未学习</div>
+              <%
+                  }else if(cont['status'] == 1){
+              %>
+              <div class="ui tiny blue label">已学习</div>
+              <%
+                  }else if(cont['status'] == 3){
+              %>
+                  <div class="ui tiny yellow label">学习中</div>
+              <%
+                }
+              %>
+            </td>
+            <td><%= cont.seq %></td>
+            <td><%= new Date(cont.call_time).format("yyyy-MM-dd hh:mm") %></td>
+            <td><%= common.get_sys_name(cont.system, systemList) %></td>
+            <td><%= cont.customer.name %></td>
+            <td><%= cont.end_comment %></td>
+            <td><%= cont.satisfy_comment %></td>
+            <td><%= common.secondToTime(cont.call_duration/1000) %></td>
+            <td><%= cont.mute_ratio %></td>
+            <td><%= cont.customer_speed %></td>
+            <td><%= cont.agent_speed %></td>
+            <td><%= cont.mute_duration/1000 %>秒</td>
+            <td style="width:120px;">
+              <a href="javascript:;" onclick="showAudio('<%= cont._id %>','study')">学习</a>&nbsp;&nbsp;
+              <%
+                if(cont['audio_status'].manual_inspection_status ===1) {
+              %>
+              <a href="javascript:;" onclick="viewQaResult('<%= cont._id %>','play')">查看结果</a>&nbsp;&nbsp;
+              <% } %>
+            </td>
+          </tr>
+        <% } %>
+      <% } else { %>
+        <tr>
+          <td colspan="18" style="text-align:center;">暂无数据</td>
+        </tr>
+      <% } %>
+
+    </tbody>
+  </table>
+</div>
+
+<%-common.paging("/audios/study", "status="+status, totalPage, offset, limit, 5)%>
+
+<% include ../inspections/inspection_result_modal %>
+<% include ../inspections/audio_play_modal %>
+
+<script>
+  var from, to;
+  $(function() {
+    activeUrl();
+    //init search query
+    $('select[name="status"]').val($('select[name="status"]').attr('data-value'))
+    //初始化下拉框
+    $('.ui.dropdown').dropdown();
+  });
+
+  //搜索
+  function search() {
+    var status = $('select[name="status"]').val();
+    location.href = encodeURI("?status=" + status + "&limit=" + <%= limit %>);
+  }
+
+  //table全选全不选
+  $('.insTable').delegate("input", "change", function() {
+    if ($('.insTable input:checked').length === $('.insTable input').length) {
+      $("#allChecked").prop("checked", true);
+    } else {
+      $("#allChecked").prop("checked", false);
+    }
+  });
+  $("#allChecked").click(function() {
+    if ($(this).prop("checked") === true) {
+      $('.insTable input').prop("checked", true);
+    } else {
+      $('.insTable input').prop("checked", false);
+    }
+  });
+
+  //标记已学习
+  function markAsStudy(){
+    if ($('.insTable input:checked').length === 0) {
+      swal("请先选择一个项目","","warning")
+      return false;
+    }
+    var flag = 0,audiosList = [];
+    $('.insTable tbody input:checked').each(function(){
+      if($(this).parents("tr").attr("data-status") === "1"){
+        swal("请勿选择已学习的录音","","warning")
+        $('.insTable input:checked').prop("checked",false);
+        audiosList = [];
+        flag = 1;
+        return false;
+      }else {
+        audiosList.push($(this).parents("tr").attr("data-id"));
+      }
+    });
+    if(flag === 0){
+      $.ajax({
+        type: "post",
+        url: "/audios/study",
+        dataType: 'json',
+        contentType : "application/json",
+        data:JSON.stringify({audio_ids:audiosList}),
+        success: function(data) {
+          if(data.code === "20000"){
+            swal({
+              title: data.msg,
+              text: '',
+              type: 'success'
+            }, function() {
+              setTimeout(function() {
+                location.reload();
+              }, 330);
+            })
+          }else{
+            swal(data.msg, "", "error")
+          }
+        },
+        error: function(err) {
+          swal("操作失败请重试", "", "error")
+        }
+      });
+    }
+  }
+</script>

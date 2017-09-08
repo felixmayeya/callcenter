@@ -1,0 +1,322 @@
+<style>
+  #edit_rule {
+    width: 600px;
+    margin-left: -300px;
+  }
+
+  .inputbox {
+    line-height: 30px;
+    margin: 15px 0;
+  }
+
+  .inputbox input {
+    width:400px;
+  }
+
+  .rule_label {
+    width:80px;
+    margin-right: 20px;
+    text-align: right;
+    line-height: 38px;
+  }
+
+  #edit_rule .dropdown.selection {
+    width: 400px;
+  }
+</style>
+
+<div class="ui form">
+  <div class="four fields">
+    <div class="field">
+      <label>所属规则集</label>
+      <select class="ui dropdown" id="foldersSelect" data-value="<%=rule_group%>">
+        <option value="all">全部规则集</option>
+        <%
+          for (var i in ruleGroups) {
+            var ruleGroup = ruleGroups[i];
+        %>
+        <option value="<%=ruleGroup['_id']%>"><%=ruleGroup['name']%></option>
+            <%
+        }
+        %>
+      </select>
+    </div>
+    <div class="field">
+      <label>规则名称</label>
+      <input type="text" id="name" placeholder="" value="<%=name%>">
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit button" onclick="search()">
+        <i class="icon search"></i> 搜索
+      </div>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit right floated button" onclick="location.href = 'rules/create'">
+        <i class="icon write"></i> 添加规则
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+  <table class="ui small very basic table">
+    <thead>
+      <tr>
+        <th>序号</th>
+        <th>规则名称</th>
+        <th>所属规则集</th>
+        <th width="500">内容</th>
+        <th>状态</th>
+        <th>扣分原因</th>
+        <th>创建时间</th>
+        <th width="100"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <%
+        if (conts && conts.length > 0) {
+        %>
+        <%
+          for (var i in conts) {
+            var cont = conts[i];
+        %>
+          <tr>
+            <td>
+              <%=(Number(offset) + Number(i) + 1)%>
+            </td>
+            <td>
+              <%=cont['name']%>
+            </td>
+            <td>
+              <%=
+                  (function(){
+                    for(var j in ruleGroups){
+                      var _ruleGroups = ruleGroups[j]
+                      if(_ruleGroups['_id'] == cont['rule_group']){
+                        return _ruleGroups['name'];
+                      }
+                    }
+                  })()
+              %>
+            </td>
+            <td>
+              <%=cont['content']%>
+            </td>
+            <td>
+              <%=cont['status']==0?"禁用":"启用"%>
+            </td>
+            <td>
+              <%=cont['remarks']%>
+            </td>
+            <td>
+              <%=common.format_date(cont['created'], 'yyyy-MM-dd hh:mm:ss')%>
+            </td>
+            <td style="text-align:right;">
+              <a href="javascript:;" onclick="location.href = 'rules/edit/<%=cont['_id']%>'">编辑</a> &nbsp;&nbsp;
+              <a href="javascript:;" onclick="deleteRule('<%=cont['_id']%>')">删除</a>
+            </td>
+          </tr>
+          <%
+      }
+      %>
+
+            <% } else { %>
+              <tr>
+                <td colspan="8" style="text-align:center;">暂无数据</td>
+              </tr>
+              <% } %>
+    </tbody>
+  </table>
+</div>
+
+<%-common.paging("/rules", "name="+name+"&rule_group="+rule_group, totalPage, offset, limit, 5)%>
+
+<!-- <div class="ui modal" id="edit_rule">
+  <i class="close icon"></i>
+  <div class="header">
+    编辑规则
+  </div>
+  <div class="content">
+    <div class="description">
+      <div class="ui input inputbox">
+        <span class="rule_label">名称</span><input type="text" id="rule_name">
+      </div><br/>
+      <div class="ui input inputbox">
+        <span class="rule_label">内容</span><input type="text" id="rule_des">
+      </div><br/>
+      <div class="ui input inputbox">
+        <span class="rule_label">备注</span><input type="text" id="rule_rem">
+      </div><br/>
+      <div class="ui input inputbox">
+        <span class="rule_label">所属规则集</span>
+        <select name="folderSelect" class="ui dropdown" id="folderSelect">
+          <%
+            for (var i in ruleGroups) {
+              var ruleGroup = ruleGroups[i];
+          %>
+          <option value="<%=ruleGroup['_id']%>"><%=ruleGroup['name']%></option>
+              <%
+          }
+          %>
+        </select>
+      </div><br/>
+      <div class="ui input inputbox">
+        <span class="rule_label">状态</span>
+        <select name="statusSelect" class="ui dropdown" id="statusSelect">
+          <option value="1">启用</option>
+          <option value="0">禁用</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="ui black deny button">取消</div>
+    <div class="ui positive right labeled icon button" onclick="saveRule()">保存<i class="checkmark icon"></i>
+    </div>
+  </div>
+</div> -->
+
+<script>
+  $(function(){
+    activeUrl();
+    $('#foldersSelect').dropdown("set selected",$('#foldersSelect').attr("data-value"));
+    $('#folderSelect').dropdown();
+    $('#statusSelect').dropdown();
+  })
+
+  function search(){
+    location.href=encodeURI("?name="+$("#name").val()+"&rule_group="+$('#foldersSelect').val()+"&limit=<%=limit%>");
+  }
+
+  /*function editRule(row) {
+    $('#edit_rule').attr("data-id", row._id);
+    $('#edit_rule .header').text("修改规则");
+    $("#rule_name").val(row.name);
+    $("#rule_des").val(row.content);
+    $("#rule_rem").val(row.remarks);
+    $('#statusSelect').dropdown("set selected",row.status+"");
+    $('#folderSelect').dropdown("set selected",row.rule_group);
+    $('#edit_rule').modal({'autofocus':false,'closable':false,onApprove:function(){return false}}).modal('show');
+  };
+
+  function createRule() {
+    $('#edit_rule').attr("data-id", "new");
+    $('#edit_rule .header').text("添加规则");
+    $("#rule_name").val("");
+    $("#rule_des").val("");
+    $("#rule_rem").val("");
+    $('#statusSelect').dropdown("set selected",$('#statusSelect option:first-of-type').val());
+    $('#folderSelect').dropdown("set selected",$('#folderSelect option:first-of-type').val());
+    $('#edit_rule').modal({'autofocus':false,'closable':false,onApprove:function(){return false}}).modal('show');
+  };
+
+  function saveRule() {
+    var _order = $('#edit_rule').attr("data-id");
+    var _name = $("#rule_name").val();
+    var _des = $("#rule_des").val();
+    var _status = $('#statusSelect').val();
+    var _rem = $("#rule_rem").val();
+    var _fol = $("#folderSelect").val();
+
+    if (_name == "") {
+      swal("请填写名称!", "", "warning");
+      return false;
+    }
+
+    if (_des == "") {
+      swal("请填写内容!", "", "warning");
+      return false;
+    }
+
+    var action = {};
+    _order === "new" ? action = {title: "添加",type: "post",order: ""} : action = {title: "修改",type: "put",order: "/" + _order};
+
+    var params = {
+      name: _name,
+      content: _des,
+      remarks: _rem,
+      status: _status,
+      rule_group: _fol
+    };
+
+    swal({
+        title: "确认" + action.title + "规则？",
+        text: "",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: action.title,
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          $.ajax({
+              type: action.type,
+              url: "/rules" + action.order,
+            data: params,
+            success: function(data) {
+              swal({
+                  title: action.title + "成功",
+                  text: "",
+                  type: "success",
+                  confirmButtonText: "确定",
+                },
+                function() {
+                  setTimeout(function() {
+                    location.reload();
+                  }, 330);
+                });
+            },
+            error: function() {
+              swal(action.title + "失败，请重试", "", "error");
+            }
+          });
+      }
+    });
+  };*/
+
+  function deleteRule(id) {
+    swal({
+        title: "确认删除此规则？",
+        text: "删除此规则将删除所包含词组（通用词组除外）",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: "删除",
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          $.ajax({
+            type: "delete",
+            url: "/rules/" + id,
+            success: function(data) {
+              swal({
+                  title: "删除成功",
+                  text: "",
+                  type: "success",
+                  confirmButtonText: "确定",
+                },
+                function() {
+                  setTimeout(function() {
+                    location.reload();
+                  }, 330);
+                });
+            },
+            error: function() {
+              swal("删除失败，请重试", "", "error");
+            }
+          });
+        }
+      });
+  };
+</script>

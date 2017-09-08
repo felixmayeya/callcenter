@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <link rel="shortcut icon" href="/img/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/js/sweetalert/sweetalert.css">
+    <link rel="stylesheet" href="/js/daterangepicker/daterangepicker.css">
+    <link rel="stylesheet" href="/js/webuploader/webuploader.css">
+    <link rel="stylesheet" href="/js/jedate/jedate.css">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <meta name="description" content="北京开数科技有限公司">
+    <meta name="rights" content="©2017 open01.com All rights reserved.">
+    <meta name="keywords" content="开数, 开数科技, 机器数据分析, 日志管理, 日志分析, 商业智能, 系统安全, 大数据, 机器学习, 人工智能">
+    <title><%=title%> - 智能语音分析系统</title>
+    <link rel="stylesheet" type="text/css" href="/styles/dist/semantic.min.css">
+    <link rel="stylesheet" type="text/css" href="/js/jquery-3d-menu-with-search/css/jquery-accordion-menu.css">
+
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/moment/moment.min.js"></script>
+    <script src="/js/sweetalert/sweetalert.min.js"></script>
+    <script src="/styles/dist/semantic.min.js"></script>
+    <script src="/js/daterangepicker/daterangepicker.js"></script>
+    <script src="/js/jedate/jedate.js"></script>
+    <script src="/js/jquery-3d-menu-with-search/js/jquery-accordion-menu.js"></script>
+
+    <script src="/js/security.js"></script>
+    <script src="/js/echarts/echarts.js"></script>
+    <script src="/js/echarts/datatool.min.js"></script>
+    <script src="/js/echarts/echarts-wordcloud.min.js"></script>
+
+    <script src="/js/lodash.js"></script>
+
+    <style type="text/css">
+        .ui.menu.pagination .item {position: static}
+        .pagination .seprator {display: block;line-height: 36px;font-weight: 500;}
+        .hidden.menu {
+            display: none;
+        }
+
+        .mainmenu {
+          margin-right:10px;
+        }
+
+        .masthead.segment {
+            min-height: 700px;
+            padding: 1em 0em;
+        }
+
+        .masthead .logo.item img {
+            margin-right: 1em;
+        }
+
+        .masthead .ui.menu .ui.button {
+            margin-left: 0.5em;
+        }
+
+        .masthead h1.ui.header {
+            margin-top: 3em;
+            margin-bottom: 0em;
+            font-size: 4em;
+            font-weight: normal;
+        }
+
+        .masthead h2 {
+            font-size: 1.7em;
+            font-weight: normal;
+        }
+
+        .ui.vertical.stripe {
+            /*padding: 8em 0em;*/
+        }
+
+        .ui.vertical.stripe h3 {
+            font-size: 2em;
+        }
+
+        .ui.vertical.stripe .button+h3,
+        .ui.vertical.stripe p+h3 {
+            margin-top: 3em;
+        }
+
+        .ui.vertical.stripe .floated.image {
+            clear: both;
+        }
+
+        .ui.vertical.stripe p {
+            font-size: 1.33em;
+        }
+
+        .ui.vertical.stripe .horizontal.divider {
+            margin: 3em 0em;
+        }
+
+        .quote.stripe.segment {
+            padding: 0em;
+        }
+
+        .quote.stripe.segment .grid .column {
+            padding-top: 5em;
+            padding-bottom: 5em;
+        }
+
+        .secondary.pointing.menu .toc.item {
+          /*display: none;*/
+          position: relative;
+          color: #fff;
+          cursor: pointer;
+          z-index: 1000;
+          padding:18px;
+          font-size:16px;
+        }
+        .secondary.pointing.menu .toc.item:hover{
+          color: #ED5565!important;
+        }
+        .secondary.pointing.menu>.item.headImage{
+          position: relative;
+          display: block;
+          width:148px;
+          height:52px;
+          margin-right:20px;
+          padding:6px 10px;
+          color: #fff!important;
+          line-height: 30px;
+          cursor: pointer;
+        }
+        .secondary.pointing.menu>.item.headImage:hover{
+          background: rgba(255,255,255,0.1)!important;
+          color: #fff!important;
+        }
+        .secondary.pointing.menu>.item.headImage>.imgbox{
+          width:40px;
+          height:40px;
+          float: left;
+          margin-right: 10px;
+          border-radius:50%;
+          overflow: hidden;
+        }
+        .secondary.pointing.menu>.item.headImage>span{
+          display: inline-block;
+          width:75px;
+          height:auto;
+          line-height:16px;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          vertical-align:top;
+        }
+        .secondary.pointing.menu>.item.headImage>span.label-role{
+          width:auto;
+          height:auto;
+          padding:0 5px;
+          background:#54c8ff;
+          border-radius:3px;
+          margin-top:-10px;
+          font-size:12px;
+        }
+        .navbar {
+          background:#2b3643;
+          border-bottom: 1px solid #2c2c2c;
+        }
+        .secondary.pointing.menu .navlogo.item {
+          position:relative;
+          width: 140px;
+          height: 52px;
+          margin-right:18px;
+          padding:0;
+          padding-left: 22px;
+          box-sizing: content-box;
+        }
+        .secondary.pointing.menu .navlogo.item img{
+          width: 100px;
+        }
+
+        .footer.segment {
+            padding: 5em 0em;
+        }
+
+        .bodybox {
+          padding:0px 20px;
+          margin-top:50px;
+        }
+
+        .tablebox {
+          overflow: auto;
+        }
+        nav{
+          position: absolute;
+          top:0;
+          left: 0;
+          width: 100%;
+          height: 52px;
+          z-index: 100;
+        }
+        .whildBox{
+          position: relative;
+          padding-top:52px;
+          box-sizing: border-box;
+          height: 100vh;
+          overflow: hidden;
+        }
+        .whildBox>aside{
+          position: absolute;
+          left: 0;
+          top: 53px;
+          width:235px;
+          height: 100%;
+          overflow: auto;
+          background: #364150;
+          z-index: 1000;
+        }
+        .whildBox>aside>.pointing.menu{
+          width: 100%;
+          background: #000;
+          color: #fff;
+        }
+        .whildBox>aside>.pointing.menu>.item{
+          color: #fff;
+          border-color: #fff;
+        }
+        .whildBox>section{
+          width: 100%;
+          height: 100%;
+          padding:0 0 0 255px;
+          box-sizing: border-box;
+        }
+        .whildBox>section>div{
+          width: 100%;
+          height: 100%;
+          padding:35px 20px 30px 0;
+          padding-right: 20px;
+          padding-bottom: 30px;
+          overflow: auto;
+        }
+        .field{
+          clear: none!important;
+        }
+        table tr td,table tr th{
+          white-space: nowrap;
+        }
+        footer {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          height:20px;
+          padding-top:8px;
+          box-sizing: content-box;
+          line-height: 20px;
+          text-align: center;
+        }
+        footer>p{
+          width: 100%;
+          height:20px;
+          line-height: 20px;
+          font-size: 12px;
+          text-align: center;
+        }
+        .required_input::before{
+          content: "*";
+          color: #ff4949;
+          margin-right: 4px;
+        }
+
+        .hourselect,.minuteselect,.secondselect{
+          width: 60px;
+        }
+        .daterangepicker .ui.dropdown.yearselect > .dropdown.icon, .daterangepicker .ui.dropdown.monthselect > .dropdown.icon, .daterangepicker .ui.dropdown.hourselect > .dropdown.icon, .daterangepicker .ui.dropdown.minuteselect > .dropdown.icon, .daterangepicker .ui.dropdown.secondselect > .dropdown.icon, .daterangepicker .ui.dropdown.ampmselect > .dropdown.icon{
+          padding:auto .15em auto .8em
+        }
+        .daterangepicker .ui.dropdown.hourselect, .daterangepicker .ui.dropdown.minuteselect, .daterangepicker .ui.dropdown.secondselect, .daterangepicker .ui.dropdown.ampmselect{
+          padding:.78571429em 2.1em .78571429em 1em;
+        }
+        .table{
+          margin-right:14px;
+        }
+        @media only screen and (max-width: 700px) {
+            .whildBox>aside{
+              display: none;
+              left: -235px;
+            }
+            .whildBox>section{
+              padding-left: 20px;
+            }
+            footer{
+              background: #fff;
+            }
+            .ui.fixed.menu {
+                display: none !important;
+            }
+            .mainmenu,
+            .secondary.pointing.menu .item,
+            .secondary.pointing.menu .menu {
+                display: none;
+            }
+            .secondary.pointing.menu .toc.item {
+              display: block;
+            }
+            .masthead.segment {
+                min-height: 350px;
+            }
+            .masthead h1.ui.header {
+                font-size: 2em;
+                margin-top: 1.5em;
+            }
+            .masthead h2 {
+                margin-top: 0.5em;
+                font-size: 1.5em;
+            }
+            .bodybox {
+              margin-top:0;
+            }
+        }
+          .clearfix {
+            *zoom: 1;
+          }
+          .clearfix:before,
+          .clearfix:after {
+            display: table;
+            line-height: 0;
+            content: "";
+          }
+          .clearfix:after {
+            clear: both;
+          }
+
+    </style>
+</head>
+<body>
+  <div class="pusher">
+      <nav><% include header %></nav>
+      <div class="ui whildBox clearfix">
+        <aside><% include menu %></aside>
+        <section>
+          <div><%-body%></div>
+        </section>
+      </div>
+      <% include footer %>
+  </div>
+</body>
+</html>
+
+<script type="text/javascript">
+    $(function() {
+      $(".whildBox>aside").height($(window).height()-52);
+        $('.masthead').visibility({
+            once: false,
+            onBottomPassed: function() {
+                $('.fixed.menu').transition('fade in');
+            },
+            onBottomPassedReverse: function() {
+                $('.fixed.menu').transition('fade out');
+            }
+        });
+
+        jQuery("#jquery-accordion-menu").jqueryAccordionMenu();
+
+        $("#sideBtn").click(function(){
+          $("#sideBtn").attr("data-btn") == 1 ? sidebarHide() : sidebarShow();
+        });
+        $(window).resize(function(){
+          $(this).width() < 700 ? sidebarHide() : sidebarShow();
+        });
+        $(document).ready(function(){
+          if($(this).width() < 700){
+            $("#sideBtn").attr("data-btn",0);
+          }
+        })
+        $('.menu .dropdown').dropdown({ on: 'hover' });
+        $(".limitSelect").dropdown();
+    });
+
+    var sidebarHide = function(){
+      $("#sideBtn").attr("data-btn",0);
+      $("section").animate({"padding-left":"20px"},100);
+      $("aside").animate({
+        "left":"-235px"
+      },100,function(){
+        $("aside").hide();
+        $("footer").css("background","#fff");
+      });
+    }
+
+    var sidebarShow = function(){
+      $("#sideBtn").attr("data-btn",1);
+      $("footer").css("background","transparent");
+      $("aside").show();
+      $("section").animate({"padding-left":"255px"},100);
+      $("aside").animate({
+        "left":"0"
+      },100);
+    }
+
+    //判断是否为mac系统
+    var isMac = function() {
+        return /macintosh|mac os x/i.test(navigator.userAgent);
+    }
+
+    var isWindows = function() {
+        return /windows|win32/i.test(navigator.userAgent);
+    }
+    //input特殊符号验证
+    var spec = function(obj) {
+      var pattern = new RegExp("[`~!@%#$^&*()=|{}':;',\\[\\]<>/?／＼］\\.；：%……+￥（）【】‘”“'．。，、？１２３４５６７８９０－＝＿＋～？！＠＃＄％＾＆＊——）-]");
+      if(pattern.test($(obj).val())){
+        $(obj).val("");
+        swal("不得输入特殊符号！请更改", "", "warning");
+      }
+    };
+    //名称重复验证
+    var distinct = function(obj,path) {
+      var _name = $(obj);
+      if(_name.val() === ""){
+        return false;
+      }
+      $.ajax({
+        type:'get',
+        url: path +'/validate/'+_name.val(),
+        success:function(data){
+          if(data.status !== 20000){
+            _name.val("");
+            swal("名称已存在，请更改", "", "warning");
+          }
+        }
+      })
+    };
+    //sidebar回显
+    var activeUrl = function(){
+      var url = location.pathname;
+      // url.indexOf("?") >= 0 ? _url = url.match(/(\S*)\?/)[1] : _url = url;
+      $("#demo-list a").each(function(){
+        if($(this).attr("href") === url){
+          $(this).parents("ul").show();
+          $(this).parents("li").addClass("activeMenu");
+          $(this).parents("ul").siblings("a").addClass("submenu-indicator-minus");
+        }
+      })
+    };
+
+    //input长度验证
+    var checkLength = function(obj){
+      var str = $(obj).val();
+      if(str.length > 20){
+        swal("输入内容长度请勿超过20","","warning");
+        $(obj).val(str.substring(0,20));
+      }
+    }
+
+    //add 0
+    var add0 = function (num) {
+      return num < 10 ? '0' + num : '' + num;
+    };
+
+    // format second to 00:00
+    // type： text，comma
+    var secondToTime = function (second, type) {
+      var type = type || 'text'
+      var min = parseInt(second / 60);
+      var sec = parseInt(second - min * 60);
+      if(type==="text"){
+        return add0(min) + '分' + add0(sec) + '秒';
+      } else {
+        return add0(min) + ':' + add0(sec);
+      }
+    }
+
+    //初始化datepicker
+    var initDatePicker = function() {
+      //初始化daterangepicker
+      $('input[name="daterange"]').daterangepicker({
+        separator: ' 至 ',
+        timePicker12Hour: false,
+        timePickerIncrement: 1,
+        format: 'YYYY-MM-DD HH:mm',
+        locale: {
+          applyLabel: '确定',
+          cancelLabel: '关闭',
+          customRangeLabel: "自定义日期",
+          daysOfWeek: ["日", "一", "二", "三", "四", "五", "六"],
+          monthNames: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
+        },
+        "timePicker": true,
+        "timePicker24Hour": true
+      }, function(start, end, label) {
+        // from = parseInt(moment(start).valueOf());
+        // to = parseInt(moment(end).valueOf());
+      });
+    }
+
+    Date.prototype.format = function(fmt)
+    {
+      var o = {
+        "M+" : this.getMonth()+1,                 //月份
+        "d+" : this.getDate(),                    //日
+        "h+" : this.getHours(),                   //小时
+        "m+" : this.getMinutes(),                 //分
+        "s+" : this.getSeconds(),                 //秒
+        "q+" : Math.floor((this.getMonth()+3)/3), //季度
+        "S"  : this.getMilliseconds()             //毫秒
+      };
+      if(/(y+)/.test(fmt))
+      fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length));
+      for(var k in o)
+      if(new RegExp("("+ k +")").test(fmt))
+      fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));
+      return fmt;
+    }
+
+    var secondToTime = function(second) {
+      second = second/1000;
+      var add0 = function (num) {
+        return num < 10 ? '0' + num : '' + num;
+      };
+      var min = parseInt(second / 60);
+      var sec = parseInt(second - min * 60);
+      return add0(min) + '分' + add0(sec) + '秒';
+    }
+</script>

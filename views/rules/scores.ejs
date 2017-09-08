@@ -1,0 +1,489 @@
+<style>
+  #edit_score {
+    width: 660px;
+    margin-left: -330px;
+  }
+
+  #edit_score .dropdown.selection{
+    width: 100%;
+  }
+
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+  }
+  input[type="number"]{
+      -moz-appearance: textfield;
+  }
+</style>
+
+<div class="ui form">
+  <div class="four fields">
+    <div class="field">
+      <label>所属业务</label>
+      <select class="ui dropdown" id="foldersSelect1" data-value="<%=system%>">
+        <option value="all">全部业务</option>
+        <%
+          for (var i in systems) {
+            var _systems = systems[i];
+        %>
+        <option value="<%=_systems['_id']%>"><%=_systems['name']%></option>
+            <%
+        }
+        %>
+      </select>
+    </div>
+    <div class="field">
+      <label>规则库选择</label>
+      <select class="ui dropdown" id="foldersSelect2" data-value="<%=rule_base%>">
+        <option value="all">全部规则库</option>
+        <option value="智能质检评分规则库">智能质检评分规则库</option>
+        <option value="人工质检评分规则库">人工质检评分规则库</option>
+        <option value="附加分评分规则库">附加分评分规则库</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit button" onclick="search()">
+        <i class="icon search"></i> 搜索
+      </div>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit button right floated" onclick="createScore();">
+        <i class="icon write"></i> 添加规则
+      </div>
+      <div class="ui yellow button right floated" onclick="location.href='weights'">
+        权重设置
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+  <table class="ui small very basic table">
+    <thead>
+      <tr>
+        <th>序号</th>
+        <th>所属业务</th>
+        <th>所属规则库</th>
+        <th>规则名称</th>
+        <th>分值</th>
+        <th width="100"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <%
+        if (conts && conts.length > 0) {
+        %>
+        <%
+          for (var i in conts) {
+            var cont = conts[i];
+        %>
+          <tr>
+            <td>
+              <%=(Number(offset) + Number(i) + 1)%>
+            </td>
+            <td>
+              <%=
+                  (function(){
+                    for(var j in systems){
+                      var _systems = systems[j]
+                      if(_systems['_id'] == cont['system']){
+                        return _systems['name'];
+                      }
+                    }
+                  })()
+              %>
+            </td>
+            <td>
+              <%=cont['rule_base']%>
+            </td>
+            <td>
+              <%=
+              (function(){
+                for(var j in rules){
+                  var _rules = rules[j]
+                  if(_rules['_id'] == cont['rule']){
+                    return _rules['name'];
+                  }
+                }
+              })()
+              %>
+            </td>
+            <td>
+              <%=cont['score']%>
+            </td>
+            <td style="text-align:right;">
+              <a href="javascript:;" onclick="editScore(<%=JSON.stringify(cont)%>)">编辑</a> &nbsp;&nbsp;
+              <a href="javascript:;" onclick="deleteScore('<%=cont['_id']%>')">删除</a>
+            </td>
+          </tr>
+          <%
+      }
+      %>
+
+            <% } else { %>
+              <tr>
+                <td colspan="8" style="text-align:center;">暂无数据</td>
+              </tr>
+              <% } %>
+    </tbody>
+  </table>
+</div>
+
+<%-common.paging("/rules/scores", "system="+system+"&rule_base="+rule_base, totalPage, offset, limit, 5)%>
+
+<div class="ui modal" id="edit_score">
+  <i class="close icon"></i>
+  <div class="tiny header">
+    编辑评分规则
+  </div>
+  <div class="content">
+    <form class="ui form">
+      <div class="two fields">
+        <div class="field">
+          <label class="required_input">所属业务</label>
+          <div class="ui left input">
+            <select name="addSystem" class="ui dropdown" id="addSystem">
+              <%
+                for (var i in systems) {
+                  var _systems = systems[i];
+              %>
+              <option value="<%=_systems['_id']%>"><%=_systems['name']%></option>
+                  <%
+              }
+              %>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">所属规则库</label>
+          <div class="ui left input">
+            <select name="addProject" class="ui dropdown" id="addProject">
+              <option value="auto">智能质检评分规则库</option>
+    					<option value="manual">人工质检评分规则库</option>
+    					<!-- <option value="附加分评分规则库">附加分评分规则库</option> -->
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="two fields">
+        <div class="field">
+          <label class="required_input">质检对象</label>
+          <div class="ui left input">
+            <select name="addRole" class="ui dropdown" id="addRole">
+    					 <option value="通话双方" selected="selected">通话双方</option>
+    					 <option value="客户">客户</option>
+    					 <option value="坐席">坐席</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">评分规则</label>
+          <div class="ui left input">
+            <select name="addRule" class="ui dropdown" id="addRule"></select>
+          </div>
+        </div>
+
+      </div>
+      <div class="two fields">
+        <div class="field">
+          <label>可用分值</label>
+          <div class="ui left input">
+            <input type="number" id="addAvailableScore" max="100" readonly>
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">分值</label>
+          <div class="ui left input">
+            <input type="number" id="addScore" max="100">
+          </div>
+        </div>
+      </div>
+      <!-- <div class="field">
+        <label>附加分描述</label>
+        <div class="ui left input">
+          <select name="addExtraDesc" class="ui" id="addExtraDesc">
+            <option value="1001001" selected="">
+            必须严格按照客服系统知识库、业务培训资料的规定正确、完整解答客户问题，以免对客户造成错误引导或产生误解
+            </option>
+          </select>
+        </div>
+      </div> -->
+    </form>
+    <div class="ui hidden divider"></div>
+  </div>
+  <div class="actions">
+    <div class="ui black deny button">取消</div>
+    <div class="ui positive submit right labeled icon button" onClick="saveScore()">保存<i class="checkmark icon"></i></div>
+  </div>
+</div>
+
+<script>
+var getRulesSwitch = 0,
+systemID = "<%=systems[0]['_id']%>",
+projectID = "auto",
+Weight = 0,
+Available = 0,
+Score = 0;
+  $(function(){
+    activeUrl();
+    $('#foldersSelect1').val($('#foldersSelect1').attr("data-value"));
+    $('#foldersSelect2').val($('#foldersSelect2').attr("data-value"));
+    $('.dropdown').dropdown();
+
+    $("#addSystem").change(function(){
+      var _sys = $(this).val();
+      var _type = $("#addProject").val();
+      getRules(_sys,_type);
+    });
+
+    $("#addProject").change(function(){
+      var _sys = $("#addSystem").val();
+      var _type = $(this).val();
+      getRules(_sys,_type);
+    });
+
+
+
+    $("#addScore").blur(function(){
+      var _score = $(this).val();
+      var numericRegex = /^[0-9]+$/;
+      var _result = 0;
+      var  _modal = $('#edit_score').attr("data-id");
+      if(_modal === "new"){
+        if(_score === "" || _score == 0){
+          $(this).val('');
+          $("#addAvailableScore").val(Available);
+          return false;
+        }
+        if(!numericRegex.test(_score)){
+          swal("分值必须为整数", "", "error");
+          $(this).val('');
+          $("#addAvailableScore").val(Available);
+          return false;
+        }
+        if (_score > Available) {
+          swal("分值不能大于可用分值!", "", "warning");
+          $(this).val("");
+          $("#addAvailableScore").val(Available);
+          return false;
+        }
+        _result = Available - _score;
+        $("#addAvailableScore").val(_result);
+
+      }else{
+        if(_score === "" || _score == 0){
+          $(this).val(Score);
+          $("#addAvailableScore").val(Available);
+          return false;
+        }
+        if(!numericRegex.test(_score)){
+          swal("分值必须为整数", "", "error");
+          $(this).val(Score);
+          $("#addAvailableScore").val(Available);
+          return false;
+        }
+        if (_score > (Available + Score)) {
+          swal("分值不能大于可用分值!", "", "warning");
+          $(this).val(Score);
+          $("#addAvailableScore").val(Available);
+          return false;
+        }
+        _result = Available + Score - _score;
+        $("#addAvailableScore").val(_result);
+      }
+
+    });
+
+  })
+
+  function search(){
+    location.href=encodeURI("?system="+$("#foldersSelect1").val()+"&rule_base="+$('#foldersSelect2').val()+"&limit=<%=limit%>");
+  }
+
+  function getRules(sid,type){
+    if(getRulesSwitch === 0){
+      $("#addRule").dropdown("clear");
+      $.ajax({
+        type:"get",
+        url:"/rules/scores/rules/"+type+"/"+sid,
+        success:function(data){
+          console.log(data);
+          var _cont = '';
+          for(var i = 0;i<data.rules.length;i++){
+            _cont += '<option value="'+ data.rules[i]._id +'" data-table="'+ data.rules[i].rule_type +'">'+ data.rules[i].name +'</option>'
+          }
+          $("#addRule").html(_cont).dropdown();
+          $("#addRule").dropdown("set selected",$("#addRule option:first-of-type").val());
+          $("#addRule").dropdown("set text",$("#addRule option:first-of-type").text());
+          Available = data.use;
+          Weight = data.weight;
+          if(Weight === 0){
+            setTimeout(function(){
+              swal({
+                  title: "无法设置分值",
+                  text: "请先设置该业务的评分权重",
+                  type: "warning",
+                  confirmButtonText: "确定",
+                });
+            },300)
+          }
+          $("#addAvailableScore").val(data.use);
+        },
+        error:function(data){
+          swal("查询失败","请选择其他业务或规则库","error");
+        }
+      })
+    }
+  }
+
+
+
+  function editScore(cont) {
+    getRulesSwitch = 1;
+    var _sys = $('#addSystem').val();
+    var _type = $('#addProject').val();
+
+    $('#edit_score').attr("data-id", cont._id);
+    $('#edit_score .header').text("修改评分规则");
+    $("#addScore").val(cont.score);
+    Score = cont.score;
+    $('#addSystem').dropdown("set selected",cont.system).addClass("disabled");
+    $('#addProject').dropdown("set selected",cont.rule_base).addClass("disabled");
+    getRulesSwitch = 0;
+    getRules(_sys,_type);
+    $('#addRole').dropdown("set selected",cont.user);
+    setTimeout(function(){
+      $('#addRule').dropdown("set selected",cont.rule).addClass("disabled");
+      $('#edit_score').modal({'autofocus':false,'closable':false,onApprove:function(){return false}}).modal('show');
+    },100)
+  };
+
+  function createScore() {
+    getRulesSwitch = 1;
+    $('#edit_score').attr("data-id", "new");
+    $('#edit_score .header').text("添加评分规则");
+    $("#addScore").val("");
+    $('#addSystem').dropdown("clear").removeClass("disabled");
+    $('#addRule').dropdown("clear").removeClass("disabled");
+    $('#addProject').dropdown("clear").removeClass("disabled");
+    getRulesSwitch = 0;
+    getRules(systemID,projectID);
+    $('#addRole').dropdown("clear");
+    $('#edit_score').modal({'autofocus':false,'closable':false,onApprove:function(){return false}}).modal('show');
+  };
+
+  function saveScore() {
+    var _order = $('#edit_score').attr("data-id");
+    var _system = $('#addSystem').val();
+    var _base = $("#addProject").val();
+    var _rule = $('#addRule').val();
+    var _user = $('#addRole').val();
+    var _score = $('#addScore').val();
+    var _available = $('#addAvailableScore').val();
+    var _ruletype = $("#addRule option:selected").attr("data-table");
+
+    if(_rule == null){
+      swal("暂无可用规则!", "请选择其他业务或规则库", "warning");
+      return false;
+    }
+
+    if(_rule === ""){
+      swal("请选择评分规则!", "", "warning");
+      return false;
+    }
+
+    if (_score == "") {
+      swal("请填写分值!", "", "warning");
+      return false;
+    }
+
+    var action = {};
+    _order === "new" ? action = {title: "添加",type: "post",order: ""} : action = {title: "修改",type: "put",order: "/" + _order};
+    var params = {
+      system:_system,
+      rule_base:_base,
+      rule:_rule,
+      rule_type:_ruletype,
+      user:_user,
+      score: _score
+    };
+
+    swal({
+        title: "确认" + action.title + "评分规则？",
+        text: "",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: action.title,
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          $.ajax({
+              type: action.type,
+              url: "/rules/scores" + action.order,
+            data: params,
+            success: function(data) {
+              swal({
+                  title: action.title + "成功",
+                  text: "",
+                  type: "success",
+                  confirmButtonText: "确定",
+                },
+                function() {
+                  setTimeout(function() {
+                    location.reload();
+                  }, 330);
+                });
+            },
+            error: function() {
+              swal(action.title + "失败，请重试", "", "error");
+            }
+          });
+      }
+    });
+  };
+
+  function deleteScore(id) {
+    swal({
+        title: "确认删除此评分规则？",
+        text: "",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: "删除",
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          $.ajax({
+            type: "delete",
+            url: "/rules/scores/" + id,
+            success: function(data) {
+              swal({
+                  title: "删除成功",
+                  text: "",
+                  type: "success",
+                  confirmButtonText: "确定",
+                },
+                function() {
+                  setTimeout(function() {
+                    location.reload();
+                  }, 330);
+                });
+            },
+            error: function() {
+              swal("删除失败，请重试", "", "error");
+            }
+          });
+        }
+      });
+  };
+</script>

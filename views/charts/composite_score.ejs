@@ -1,0 +1,181 @@
+<div class="ui form">
+  <div class="five fields" style="margin-bottom:0;">
+    <div class="field">
+      <label>呼叫时间</label>
+      <input type="text" class='datarangeInput' name="daterange" placeholder="选择时间" data-from="<%= from %>" data-to="<%= to %>">
+    </div>
+    <div class="field">
+      <label>坐席</label>
+      <select name="sit_number" class="ui fluid dropdown" data-value="<%= sit_number %>" id="sit_number">
+        <option value="all">全部坐席</option>
+        <%
+          for (var i in userList) {
+            var _userList = userList[i];
+        %>
+        <option value="<%=_userList['sit_number']%>"><%=_userList['username']%></option>
+            <%
+        }
+        %>
+      </select>
+    </div>
+    <div class="field">
+      <label>质检组</label>
+      <select name="qa_group" class="ui fluid dropdown" data-value="<%= qa_group %>" id="qa_group">
+        <option value="all">全部质检组</option>
+        <%
+          for (var i in groupList) {
+            var _groupList = groupList[i];
+        %>
+        <option value="<%=_groupList['_id']%>"><%=_groupList['name']%></option>
+            <%
+        }
+        %>
+      </select>
+    </div>
+    <div class="field">
+      <label>所属业务</label>
+      <select name="system" class="ui fluid dropdown" data-value="<%= system %>">
+        <option value="all">全部业务</option>
+        <%
+          for (var i in systemList) {
+            var _systemList = systemList[i];
+        %>
+        <option value="<%=_systemList['_id']%>"><%=_systemList['name']%></option>
+            <%
+        }
+        %>
+      </select>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit button" onclick="search()">
+        <i class="icon search"></i>
+        搜索
+      </div>
+    </div>
+  </div>
+</div>
+<div class='ui hidden divider'></div>
+<div class="ui" style="height: 85%;">
+  <div id="lineChart" style="height: 100%;"></div>
+</div>
+<div id="chartDataDom" style="display:none;" data-chart="<%=JSON.stringify(rows)%>"></div>
+<script>
+  var from, to;
+  $(function(){
+    activeUrl();
+    initSearchQuery()
+
+    //初始化下拉框
+    $('.ui.dropdown').dropdown();
+
+    //初始化日期
+    initDatePicker()
+  })
+  function search() {
+    if($('.datarangeInput').val()!=="选择时间"){
+      var dateRange = $('.datarangeInput').val().split('至');
+      from = parseInt(moment(dateRange[0].trim()).valueOf());
+      to = parseInt(moment(dateRange[1].trim()).valueOf());
+    }
+
+    location.href = encodeURI("?from=" + from + "&to=" + to + "&sit_number=" + $('select[name="sit_number"]').val() + "&qa_group=" + $('select[name="qa_group"]').val() + "&system=" + $('select[name="system"]').val());
+  }
+  //初始化search query
+  function initSearchQuery() {
+    $('select[name="system"]').val($('select[name="system"]').attr('data-value'))
+    $('select[name="sit_number"]').val($('select[name="sit_number"]').attr('data-value'))
+    $('select[name="qa_group"]').val($('select[name="qa_group"]').attr('data-value'))
+    // console.log($('input[name="daterange"]').data('from'))
+    from = $('input[name="daterange"]').attr('data-from')
+    to = $('input[name="daterange"]').attr('data-to')
+    from = from !== ''?Number(from):'';
+    to = to!==''?Number(to):'';
+    //设定input默认时间
+    if (from !== '' && to !== '') {
+      $('input[name="daterange"]').val(moment(from).format('YYYY-MM-DD HH:mm') + " 至 " + moment(to).format('YYYY-MM-DD HH:mm'));
+    } else {
+      $('input[name="daterange"]').val('选择时间');
+    }
+  }
+  var chartData=JSON.parse($("#chartDataDom").attr("data-chart"));
+  console.log(chartData);
+  var lineChart = echarts.init(document.getElementById('lineChart'));
+  var colors = ['#d14a61','#5793f3','#675bba'];
+  var option = {
+     		title: {
+            	text: '质检结果综合得分分析',
+      	},
+        toolbox:{
+          right:"2%",
+          feature:{
+            saveAsImage:{
+
+            }
+          }
+        },
+        color: colors,
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+                type: 'cross'
+            }
+        },
+        legend: {
+            data:['综合得分','智能得分','人工得分']
+        },
+        grid: {
+            top: 70,
+            bottom: 50
+        },
+        xAxis: [
+            {
+                type: 'category',
+                axisTick: {
+                    alignWithLabel: true
+                },
+                axisLine: {
+                    onZero: false,
+                },
+                data: chartData.map(function(item){
+                  return item['day']
+                })
+            }
+        ],
+        yAxis:{
+          name:"分数",
+          type: 'value',
+          max:100
+        },
+        series: [
+            {
+                name:'综合得分',
+                type:'line',
+                smooth: true,
+                data: chartData.map(function(item){
+                  return Number(item['machine_score'])+Number(item['person_score'])
+                })
+            },
+            {
+                name:'智能得分',
+                type:'line',
+                smooth: true,
+                data: chartData.map(function(item){
+                  return item['machine_score']
+                })
+            },
+            {
+                name:'人工得分',
+                type:'line',
+                smooth: true,
+                data: chartData.map(function(item){
+                  return item['person_score']
+                })
+            }
+        ]
+    };
+    lineChart.setOption(option);
+    $(window).resize(function(){
+      lineChart.resize()
+    })
+</script>

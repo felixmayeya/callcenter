@@ -1,0 +1,333 @@
+<style>
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+  }
+  input[type="number"]{
+      -moz-appearance: textfield;
+  }
+</style>
+
+
+<div class='ui mini segment'>
+  <div class="ui form">
+    <div class="field" style="margin-bottom:0;text-align:right;clear:none;">
+      <div id="uploader" class="wu-example">
+        <div class="btns">
+          <button class='ui blue small button' id="picker">浏览文件</button>
+          <button class='ui blue small button' id="ctlBtn">开始上传</button>
+          <button class='ui blue small button' id="allCancel">全部取消</button>
+        </div>
+        <div class='ui divider'></div>
+
+        <!--用来存放文件信息-->
+        <table id="thelist" class='ui small very basic table' style="display:none;">
+          <thead>
+            <tr>
+              <th>录音名称</th>
+              <th>录音大小(Bytes)</th>
+              <th>上传状态</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ui message">
+      <p>目前录音格式支持：mp3、wav,文件名仅支持半角字母和数字,(一次最多只能上传一个文件,文件的大小不能超过100M,并填写下方配置)</p>
+    </div>
+  </div>
+  <div class='ui divider'></div>
+  <div class="ui form" id="detailSetting">
+    <h4 class="ui horizontal divider header">详细配置</h4>
+    <div class="three fields">
+      <div class="field">
+        <label class="required_input">所属业务</label>
+        <select name="item_system" class="ui dropdown">
+          <%
+            for (var i in systemList) {
+              var _systemList = systemList[i];
+          %>
+          <option value="<%=_systemList['_id']%>"><%=_systemList['name']%></option>
+              <%
+          }
+          %>
+        </select>
+      </div>
+      <div class="field">
+        <label class="required_input">坐席组</label>
+        <select name="item_sit_team" class="ui dropdown">
+          <%
+            for (var i in usergroupList) {
+              var _usergroupList = usergroupList[i];
+          %>
+          <option value="<%=_usergroupList['_id']%>"><%=_usergroupList['name']%></option>
+              <%
+          }
+          %>
+        </select>
+      </div>
+      <div class="field">
+        <label class="required_input">坐席</label>
+        <select name="item_sit_number" class="ui dropdown">
+
+        </select>
+      </div>
+    </div>
+    <div class="three fields">
+      <div class="field">
+        <label class="required_input">录音流水号</label>
+        <div class="ui left input">
+          <input name="item_seq" type="text" onKeyup="spec(this);checkLengthList(this,50);" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">音频路径</label>
+        <div class="ui left input">
+          <input name="radio_path" type="text" onKeyup="specc(this);checkLengthList(this,30);" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">来电号码</label>
+        <div class="ui left input">
+          <input name="item_mobile" type="number" onKeyup="spec(this);checkLengthList(this,11);" />
+        </div>
+      </div>
+    </div>
+    <div class="three fields">
+      <div class="field">
+        <label class="required_input">呼叫时间</label>
+        <div class="ui left input">
+          <input name="item_call_time" type="text" onKeyup="spec(this);checkLengthList(this,30);" readonly="readonly"/>
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">话后总结</label>
+        <div class="ui left input">
+          <input name="item_end_comment" type="text" onKeyup="spec(this);checkLengthList(this,30);" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">满意度评价</label>
+        <div class="ui left input">
+          <input name="item_satisfy_comment" type="text" onKeyup="spec(this);checkLengthList(this,30);" />
+        </div>
+      </div>
+  </div>
+  <div class="three fields">
+    <div class="field">
+      <label class="required_input">客户名称</label>
+      <div class="ui left input">
+        <input name="item_customer_name" type="text" onKeyup="spec(this);checkLengthList(this,30);" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/webuploader/webuploader.js"></script>
+<script>
+  var userList = <%- JSON.stringify(userList)%>;
+  $(function() {
+    activeUrl();
+    // $("input[name='item_call_time']").jeDate({
+    //   format: "YYYY-MM-DD hh:mm:ss"
+    // });
+    $(".ui.dropdown").dropdown();
+    $("input[name='item_call_time']").daterangepicker({
+    "singleDatePicker": true,
+    "timePicker12Hour": false,
+    "timePicker": true,
+    "timePicker24Hour": true,
+    "timePickerSeconds": true,
+    "timePickerIncrement": 1,
+    "format": 'YYYY-MM-DD HH:mm:ss',
+    "locale": {
+      applyLabel: '确定',
+      cancelLabel: '关闭',
+      customRangeLabel: "自定义日期",
+      daysOfWeek: ["日", "一", "二", "三", "四", "五", "六"],
+      monthNames: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
+    },
+    }, function(start, end, label) {});
+    var userListDom = '';
+    var _val = $("select[name='item_sit_team']").val();
+    var _userList = $.grep(userList,function(value){
+            return value.user_group === _val
+    })
+    for(var i = 0;i < _userList.length;i++){
+      userListDom += '<option value="'+ _userList[i].sit_number +'">'+ _userList[i].username +'</option>'
+    }
+    $("select[name='item_sit_number']").html(userListDom);
+    $("select[name='item_sit_number']").dropdown("set selected",$("select[name='item_sit_number'] option:first-of-type").val());
+    $("select[name='item_sit_number']").dropdown("set text",$("select[name='item_sit_number'] option:first-of-type").text());
+  });
+
+  $("select[name='item_sit_team']").change(function(){
+    var _val = $(this).val();
+    $("select[name='item_sit_number'] option").remove();
+    var _userList = $.grep(userList,function(value){
+            return value.user_group === _val
+    })
+    var userListDom = '';
+    for(var i = 0;i < _userList.length;i++){
+      userListDom += '<option value="'+ _userList[i].sit_number +'">'+ _userList[i].username +'</option>'
+    }
+    $("select[name='item_sit_number']").html(userListDom);
+    $("select[name='item_sit_number']").dropdown("set selected",$("select[name='item_sit_number'] option:first-of-type").val());
+    $("select[name='item_sit_number']").dropdown("set text",$("select[name='item_sit_number'] option:first-of-type").text());
+  })
+
+  var specc = function(obj) {
+    var pattern = new RegExp("[`~!@%#$^&*()=|{}';',\\[\\]<>?／＼］\\；：%……+￥（）【】‘”“'．。，、？１２３４５６７８９０－＝＿＋～？！＠＃＄％＾＆＊——）-]");
+    if(pattern.test($(obj).val())){
+      $(obj).val("");
+      swal("不得输入特殊符号！请更改", "", "warning");
+    }
+  };
+
+  var $list = $("#thelist tbody");
+  var $btn = $("#ctlBtn");
+  var uploader = WebUploader.create({
+    swf: '/js/webuploader/Uploader.swf',
+    server: '/audios/upload',
+    pick: '#picker',
+    method: 'POST',
+    duplicate: true, //去重， 根据文件名字、文件大小和最后修改时间来生成hash Key
+    resize: false
+  });
+  // 当有文件被添加进队列的时候
+  uploader.on('fileQueued', function(file) {
+    if(file.type !== "" && !(file.type.indexOf("mp3") !== -1 || file.type.indexOf("wav") !== -1)){
+      swal("请上传正确的格式","","error")
+      uploader.removeFile(file);
+      return false;
+    }
+    $("#thelist").fadeIn()
+    $list.html('<tr id="' + file.id + '" class="item">' +
+      '<td class="info">' + file.name + '</td>' +
+      '<td class="fileSize">' + file.size + '</td>' +
+      '<td ><span class="state">等待上传...</span><div class="progress-bar"></div></td>' +
+      '<td class="cancelUpload"><a>取消上传<a></td>' +
+      '</tr>');
+  });
+  // 文件上传过程中创建进度条实时显示。
+  uploader.on('uploadProgress', function(file, percentage) {
+    var $li = $('#' + file.id),
+      $percent = $li.find('.progress .progress-bar');
+
+    // 避免重复创建
+    if (!$percent.length) {
+      $percent = $('<div class="progress progress-striped active">' +
+        '<div class="progress-bar" role="progressbar" style="width: 0%">' +
+        '</div>' +
+        '</div>').appendTo($li).find('.progress-bar');
+    }
+
+    $li.find('td .state').text('上传中');
+
+    $percent.css('width', percentage * 100 + '%');
+  });
+  uploader.on('uploadSuccess', function(file, response) {
+    $('#' + file.id).find('td .state').text('已上传');
+  });
+
+  uploader.on('uploadError', function(file, reason) {
+    $('#' + file.id).find('td .state').text('上传出错');
+  });
+
+  uploader.on('uploadComplete', function(file) {
+    $('#' + file.id).find('.progress').fadeOut();
+    swal({
+        title: "上传成功",
+        text: "",
+        type: "success",
+        confirmButtonText: "确定",
+      },
+      function() {
+        setTimeout(function() {
+          location.reload();
+        }, 330);
+      });
+  });
+  $btn.on('click', function() {
+    var flag = 0;
+    $("#detailSetting input,#detailSetting select").each(function(index) {
+      if($(this).val() === ""){
+        flag = 1;
+      }
+    })
+    if(flag === 1){
+      swal("请完整填写配置","","warning");
+      return false;
+    }
+    var _data = {
+      system: $("select[name='item_system']").val(),
+      sit_team: $("select[name='item_sit_team']").val(),
+      sit_number: $("select[name='item_sit_number']").val(),
+      seq: $("input[name='item_seq']").val(),
+      radio_path: $("input[name='radio_path']").val(),
+      call_time: $("input[name='item_call_time']").val(),
+      end_comment: $("input[name='item_end_comment']").val(),
+      satisfy_comment: $("input[name='item_satisfy_comment']").val(),
+      customer: {
+        mobile: $("input[name='item_mobile']").val(),
+        name: $("input[name='item_customer_name']").val()
+      }
+    };
+    $.ajax({
+      type: "post",
+      url: "/audios/upload/callstat",
+      data: {callstat:JSON.stringify(_data)},
+      success: function(data){
+        if (data.code === '20000') {
+          swal({
+              title: data.msg,
+              text: "",
+              type: "success",
+              confirmButtonText: "确定",
+            },
+            function() {
+              uploader.upload();
+            });
+        }else{
+          swal({
+              title: data.msg,
+              text: "",
+              type: "error",
+              confirmButtonText: "确定",
+            });
+        }
+      },
+      error: function(data){
+
+      }
+    })
+  });
+  $("#thelist").delegate(".cancelUpload a", "click", function() {
+    var fileId = $(this).parents('tr').attr('id');
+    uploader.removeFile(fileId, true);
+    $(this).parents('tr').remove();
+    if ($("#thelist tbody tr").length === 0) {
+      $("#thelist").fadeOut();
+    }
+  })
+  $("#allCancel").click(function() {
+    $("#thelist tbody tr").each(function() {
+      var fileId = $(this).attr('id');
+      uploader.removeFile(fileId, true);
+      $(this).remove();
+    })
+    $("#thelist").fadeOut();
+  })
+
+  function checkLengthList(obj,num) {
+    var str = $(obj).val();
+    if (str.length > num) {
+      swal("输入内容长度请勿超过"+num, "", "warning");
+      $(obj).val(str.substring(0, num));
+    }
+  }
+</script>

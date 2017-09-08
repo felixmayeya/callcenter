@@ -1,0 +1,63 @@
+<div class="ui navbar">
+  <div class="ui secondary pointing menu clearfix">
+    <div class="item navlogo">
+      <img src="/img/LOGO_02_01.png" alt="">
+    </div>
+    <a class="toc item" id="sideBtn" data-btn="1">
+        <i class="sidebar icon white"></i>
+    </a>
+
+    <div class="ui item right headImage dropdown" style="">
+      <div class="imgbox">
+        <img class="ui dropdown" src="/img/user.png" width="40" alt="">
+      </div>
+      <span><%=session.user.username%></span>
+      <% 
+        var role = session.user.role;
+        if (role === 'manager') {
+      %>
+        <span class="label-role">管理员</span>
+      <% } else if (role === 'worker') { %>
+        <span class="label-role">质检员</span>
+      <% } else if (role === 'omni') { %>
+        <span class="label-role">坐席</span>
+      <% } else if (role === 'chargeman') { %>
+        <span class="label-role">质检组长</span>
+      <% } %>
+      <i class="dropdown icon" style="margin-top:-15px;margin-left:5px;"></i>
+      <div class="menu">
+        <div class="item" onclick="location.href='/notices'"> 消息通知</div>
+        <div class="item" onclick="location.href='/users/setting'"> 个人设置</div>
+        <div class="item" onclick="logout()"> 退出</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+$("#headImage").dropdown({
+  showOnFocus:false
+})
+var headImgUrl = localStorage.getItem('AVATAR');
+if(headImgUrl){
+  $(".imgbox img").attr("src",headImgUrl);
+}
+  function logout(){
+    swal({
+        title: "确认退出？",
+        text: "",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: "确认",
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          location.href="/logout";
+      }
+    });
+  }
+</script>

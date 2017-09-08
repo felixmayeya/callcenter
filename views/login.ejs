@@ -1,0 +1,164 @@
+<link rel="stylesheet" href="/js/sweetalert/sweetalert.css">
+<script src="/js/sweetalert/sweetalert.min.js"></script>
+<style>
+  .pusher,.grid{
+    height: 100%;
+  }
+  body{
+    overflow: hidden;
+  }
+  .login_bg{
+    position: absolute;
+    top:-5%;
+    left: -5%;
+    width: 110%;
+    height: 110%;
+    background: url("img/login_bg.jpg") center center;
+    background-size: cover;
+    -webkit-filter: blur(8px);
+    -moz-filter: blur(8px);
+    -ms-filter: blur(8px);
+    filter: blur(8px);
+    z-index: -999;
+  }
+  .column {
+    max-width: 400px;
+    padding:30px!important;
+    border-radius: 3px;
+    background: rgba(255,255,255,1);
+  }
+
+  .header{
+    font-size: 20px!important;
+  }
+  input{
+    /*background: transparent!important;*/
+    /*border:2px solid #54c8ff!important;*/
+    /*color: #fff!important;*/
+  }
+  .logo{
+    position: absolute;
+    top:50%;
+    left: 50%;
+    width: 200px;
+    margin-top: -230px;
+    margin-left: -100px;
+  }
+  .logo>img{
+    width: 100%;
+  }
+</style>
+
+<div class="login_bg"></div>
+
+<div class="logo">
+  <img src="img/LOGO_02_01.png" alt="">
+</div>
+<div class="ui middle aligned centered grid">
+  <div class="column">
+      <h2 class="ui center aligned icon header grey">用户登录</h2>
+      <div class="ui hidden divider"></div>
+      <form class="ui form" id="form_user_login">
+        <div class="field">
+          <div class="ui left icon input">
+            <input class="ui inverted blue" type="text" id="username" placeholder="请输入用户名...">
+            <i class="user icon blue"></i>
+          </div>
+        </div>
+        <div class="field">
+          <div class="ui left icon input">
+            <input class="ui inverted blue" type="password" id="password" placeholder="请输入密码...">
+            <i class="lock icon blue"></i>
+          </div>
+        </div>
+        <div class="field">
+          <div class="ui checkbox">
+            <input class="ui inverted blue" type="checkbox" id="rmbUser">
+            <label for="">记住密码</label>
+          </div>
+        </div>
+        <div class="field">
+          <button class="ui blue button" type="button" onclick="login();" style="width:100%;" id="loginBtn">登录</button>
+        </div>
+      </form>
+  </div>
+</div>
+
+<script type="text/javascript">
+    $(function () {
+        setEnterKey("#password","#loginBtn");
+
+        if(localStorage.getItem("CHANGEPASSWORD") === "1"){
+          localStorage.removeItem('RMBUSER');
+        }
+
+        var user = localStorage.getItem('RMBUSER');
+        if(user){
+          user = JSON.parse(user)
+          $("#rmbUser").prop("checked",true);
+          $("#username").val(user.username);
+          $("#password").val(user.password);
+        }else{
+          $("#rmbUser").prop("checked",false);
+          $("#username").val("");
+          $("#password").val("");
+        }
+
+        $("#username").blur(function(){
+          $("#password").val("");
+          localStorage.removeItem('RMBUSER');
+        })
+        $("#password").blur(function(){
+          localStorage.removeItem('RMBUSER');
+        })
+    });
+
+    function login(){
+        var username = $("#username", "#form_user_login").val();
+        var password = "";
+        var user = localStorage.getItem('RMBUSER');
+        var changep = localStorage.getItem("CHANGEPASSWORD");
+        if(localStorage.getItem('RMBUSER') && localStorage.getItem("CHANGEPASSWORD") !== "1"){
+          password = $("#password").val();
+        }else{
+          password = hex_md5($("#password").val());
+        }
+        console.log(password);
+        $.ajax({
+            type: 'post',
+            url: "/login",
+            data: {username:username, password:password},
+            success: function(data, status) {
+              if (status == 'success') {
+
+                  var rmbUser = {
+                    username: username,
+                    password: password
+                  }
+                  if($("#rmbUser").prop("checked")){
+                    localStorage.setItem('RMBUSER',JSON.stringify(rmbUser));
+                  }else{
+                    localStorage.removeItem('RMBUSER');
+                  }
+
+                  localStorage.setItem('USERID',data._id);
+                  localStorage.setItem('AVATAR',data.avatar);
+                  localStorage.setItem("CHANGEPASSWORD",0);
+
+                  if(data.role === "manager" || data.role === "chargeman"){
+                    location.href="/";
+                  }else if(data.role === "worker"){
+                    location.href="/inspect/"+data._id;
+                  }else if(data.role === "omni"){
+                    location.href="/inspections/sit/" + data.sit_number;
+                  }
+              } else {
+                swal("登录失败", "", "error");
+              }
+            },
+            error: function() {
+              swal("登录失败", "", "error");
+            }
+        });
+    }
+</script>

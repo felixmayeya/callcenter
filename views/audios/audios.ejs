@@ -1,0 +1,107 @@
+<div class="filed clearfix">
+  <button class='ui blue small button right floated' id="batchImport">导入</button>
+</div>
+<div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+  <table class="ui small very basic table">
+    <thead>
+      <tr>
+        <th>序号</th>
+        <th>批次号</th>
+        <th>导入日期</th>
+        <th>导入状态</th>
+        <th>开始时间</th>
+        <th>结束时间</th>
+        <th>总计</th>
+        <th>成功数</th>
+        <th>失败数</th>
+        <th>操作类型</th>
+        <th>导入人员</th>
+      </tr>
+    </thead>
+    <tbody>
+      <%
+        if (rows && rows.length > 0) {
+        %>
+        <%
+          for (var i in rows) {
+            var row = rows[i];
+        %>
+      <tr>
+      	<td><%=(Number(offset) + Number(i) + 1)%></td>
+      	<td><%=row['batch_number']%></td>
+      	<td><%=common.format_date(row['import_date'], 'yyyy-MM-dd hh:mm:ss')%></td>
+      	<td><%=row['status']==0?"导入成功":"导入失败"%></td>
+      	<td><%=common.format_date(row['start_time'], 'yyyy-MM-dd hh:mm:ss')%></td>
+      	<td><%=common.format_date(row['end_time'], 'yyyy-MM-dd hh:mm:ss')%></td>
+      	<td><%=row['total']%></td>
+      	<td><%=row['success']%></td>
+      	<td><%=row['failure']%></td>
+      	<td><%=row['operation_type']==0?"手动导入":"自动导入"%></td>
+      	<td><%=row['person']%></td>
+      </tr>
+          <%
+      }
+      %>
+
+        <% } else { %>
+          <tr>
+            <td colspan="11" style="text-align:center;">暂无数据</td>
+          </tr>
+          <% } %>
+    </tbody>
+  </table>
+</div>
+<%-common.paging("/audios", "", totalPage, offset, limit, 5)%>
+
+<script>
+  $(function() {
+    activeUrl();
+    //初始化下拉框
+    $('.ui.dropdown').dropdown();
+    function fileCopy() {
+      $('#file-copy-modal').modal('show')
+    }
+    $('.ui.radio.checkbox').checkbox();
+    $("#batchImport").click(function(){
+      $.ajax({
+        type: "get",
+        url: "/import/csv",
+        success: function(data){
+          if(data.code === '20000'){
+            swal({
+                title: "导入成功",
+                text: "",
+                type: "success",
+                confirmButtonText: "确定",
+              },
+              function() {
+                location.reload();
+              });
+          }else if(data.code === '30000'){
+            swal({
+                title: "不存在需要导入的数据！",
+                text: "",
+                type: "error",
+                confirmButtonText: "确定",
+              });
+          }else if(data.code === '20002'){
+            swal({
+                title: "csv文件内容格式错误，无法解析!",
+                text: "",
+                type: "error",
+                confirmButtonText: "确定",
+              });
+          }
+        },
+        error: function(){
+          swal({
+              title: "导入失败，请重试",
+              text: "",
+              type: "error",
+              confirmButtonText: "确定",
+            });
+        }
+      })
+    })
+  });
+</script>

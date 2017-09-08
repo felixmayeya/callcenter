@@ -1,0 +1,260 @@
+<style>
+  #edit_reason {
+    width: 500px;
+    margin-left: -250px;
+  }
+
+  #edit_reason .dropdown.selection {
+    width: 100%  ;
+  }
+</style>
+
+<div class="ui form">
+  <div class="four fields">
+    <div class="field">
+      <label>评分原因名称</label>
+      <input type="text" id="name" placeholder="" value="<%=name%>">
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit button" onclick="search()">
+        <i class="icon search"></i> 搜索
+      </div>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit right floated button" onclick="createReason()">
+        <i class="icon write"></i> 添加质检评分原因
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+  <table class="ui small very basic table">
+    <thead>
+      <tr>
+        <th>序号</th>
+        <th>状态</th>
+        <th>名称</th>
+        <th>描述</th>
+        <th>操作人</th>
+        <th width="200">创建时间</th>
+        <th width="100"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <%
+        if (conts && conts.length > 0) {
+        %>
+        <%
+          for (var i in conts) {
+            var cont = conts[i];
+        %>
+          <tr>
+            <td>
+              <%=(Number(offset) + Number(i) + 1)%>
+            </td>
+            <td>
+              <%=cont['status']?"启用":"禁用"%>
+            </td>
+            <td>
+              <%=cont['name']%>
+            </td>
+            <td>
+              <%=cont['content']%>
+            </td>
+            <td>
+              <%=cont['username']%>
+            </td>
+            <td>
+              <%=common.format_date(cont['created'], 'yyyy-MM-dd hh:mm:ss')%>
+            </td>
+            <td style="text-align:right;">
+              <a href="javascript:;" onclick="editReason('<%=cont['_id']%>','<%=cont['name']%>','<%=cont['content']%>','<%=cont['status']%>')">编辑</a> &nbsp;&nbsp;
+              <a href="javascript:;" onclick="deleteReason('<%=cont['_id']%>')">删除</a>
+            </td>
+          </tr>
+          <%
+      }
+      %>
+
+            <% } else { %>
+              <tr>
+                <td colspan="6" style="text-align:center;">暂无数据</td>
+              </tr>
+              <% } %>
+    </tbody>
+  </table>
+</div>
+
+<%-common.paging("/rules/manual/reason", "name="+name, totalPage, offset, limit, 5)%>
+
+<div class="ui modal" id="edit_reason">
+  <i class="close icon"></i>
+  <div class="tiny header">
+    编辑质检评分原因
+  </div>
+  <div class="content">
+    <form class="ui form">
+      <div class="field">
+        <label class="required_input">状态</label>
+        <div class="ui left input">
+          <select name="folder" class="ui dropdown" id="statusSelect">
+            <option value="1">启用</option>
+            <option value="0">禁用</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">名称</label>
+        <div class="ui left input">
+          <input type="text" onKeyup="spec(this);checkLength(this);" id="reason_name">
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">描述</label>
+        <div class="ui left input">
+          <textarea type="text" id="reason_des"></textarea>
+        </div>
+      </div>
+    </form>
+    <div class="ui hidden divider"></div>
+  </div>
+  <div class="actions">
+    <div class="ui black deny button">取消</div>
+    <div class="ui positive right labeled icon button" onClick="saveReason()">保存<i class="checkmark icon"></i></div>
+  </div>
+</div>
+
+<script>
+  $(function(){
+    activeUrl();
+  })
+  $('.dropdown').dropdown();
+
+  function search(){
+    location.href=encodeURI("?name="+$("#name").val()+"&limit=<%=limit%>");
+  }
+
+  function editReason(order, name, des, fol) {
+    $('#edit_reason').attr("data-id", order);
+    $('#edit_reason .header').text("修改质检评分原因");
+    $("#reason_name").val(name);
+    $("#reason_des").val(des);
+    $('#statusSelect').dropdown("set selected",fol);
+    $('#edit_reason').modal({'autofocus':false,'closable':false,onApprove:function(){return false}}).modal('show');
+  };
+
+  function createReason() {
+    $('#edit_reason').attr("data-id", "new");
+    $('#edit_reason .header').text("添加质检评分原因");
+    $("#reason_name").val("");
+    $("#reason_des").val("");
+    $('#statusSelect').dropdown("set selected",$('#statusSelect option:first-of-type').val());
+    $('#edit_reason').modal({'autofocus':false,'closable':false,onApprove:function(){return false}}).modal('show');
+  };
+
+  function saveReason() {
+    var _order = $('#edit_reason').attr("data-id");
+    var _name = $("#reason_name").val();
+    var _des = $("#reason_des").val();
+    var _status = $('#statusSelect').val();
+
+    if (_name == "") {
+      swal("请填写名称!", "", "warning");
+      return false;
+    }
+
+    if (_des == "") {
+      swal("请填写描述!", "", "warning");
+      return false;
+    }
+
+    var action = {};
+    _order === "new" ? action = {title: "添加",type: "post",order: ""} : action = {title: "修改",type: "put",order: "/" + _order};
+    var params = {
+      name: _name,
+      content: _des,
+      status: _status
+    };
+
+    swal({
+        title: "确认" + action.title + "质检评分原因？",
+        text: "",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: action.title,
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          $.ajax({
+              type: action.type,
+              url: "/rules/manual/reason" + action.order,
+            data: params,
+            success: function(data) {
+              swal({
+                  title: action.title + "成功",
+                  text: "",
+                  type: "success",
+                  confirmButtonText: "确定",
+                },
+                function() {
+                  setTimeout(function() {
+                    location.reload();
+                  }, 330);
+                });
+            },
+            error: function() {
+              swal(action.title + "失败，请重试", "", "error");
+            }
+          });
+      }
+    });
+  };
+
+  function deleteReason(id) {
+    swal({
+        title: "确认删除此关键词分类？",
+        text: "",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: "删除",
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          $.ajax({
+            type: "delete",
+            url: "/rules/manual/reason/" + id,
+            success: function(data) {
+              swal({
+                  title: "删除成功",
+                  text: "",
+                  type: "success",
+                  confirmButtonText: "确定",
+                },
+                function() {
+                  setTimeout(function() {
+                    location.reload();
+                  }, 330);
+                });
+            },
+            error: function() {
+              swal("删除失败，请重试", "", "error");
+            }
+          });
+        }
+      });
+  };
+</script>

@@ -1,0 +1,195 @@
+<div class="ui form">
+  <div class="four fields">
+    <div class="field">
+      <label>呼叫时间</label>
+      <input type="text" class='datarangeInput' name="daterange" placeholder="选择时间" data-from="<%= from %>" data-to="<%= to %>">
+    </div>
+    <div class="field">
+      <label>复议状态</label>
+      <select name="recheckStatus" class="ui fluid dropdown" data-value="<%= recheckStatus %>">
+        <option value="all">全部</option>
+        <option value="1">已申请</option>
+        <option value="2">已评审</option>
+        <option value="3">已驳回</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit button" onclick="search()">
+        <i class="icon search"></i> 搜索
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+  <table class="ui small very basic table">
+    <thead>
+      <tr>
+        <th>序号</th>
+        <th>录音流水号</th>
+        <th>客户名称</th>
+        <th>通话总时长</th>
+        <th>静音总时长</th>
+        <th>呼叫时间</th>
+        <th>复议状态</th>
+        <th>复议理由</th>
+        <th style="width:120px;">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if(rows && rows.length>0) { %>
+        <%
+	        for(i in rows){
+	          row = rows[i]
+            var recheck_status = ''
+	          if(row.recheck_status===''||row.recheck_status===1){
+	          	recheck_status='已申请'
+	          } else if (row.recheck_status===2) {
+							recheck_status='已评审'
+	          } else if (row.recheck_status===3) {
+	          	recheck_status='已驳回'
+	          }
+	      %>
+          <tr>
+            <td>
+              <%= Number(offset)+Number(i)+1 %>
+            </td>
+            <td>
+              <%= row.seq %>
+            </td>
+            <td>
+              <%= row.customer.name %>
+            </td>
+            <td>
+              <%= common.secondToTime(row.call_duration/1000) %>
+            </td>
+            <td>
+              <%= row.mute_duration %>
+            </td>
+            <td>
+              <%= new Date(row.call_time).format("yyyy-MM-dd hh:mm") %>
+            </td>
+            <td>
+              <%= recheck_status %>
+            </td>
+            <td>
+              <%= row.recheck_reason %>
+            </td>
+            <td style="width:240px;">
+              <% if(row.recheck_status === 1) {
+                  var item = JSON.stringify(row);
+              %>
+              <a href="javascript:;" onclick="updateStatus(<%= item %>, 2)">通过</a> &nbsp;&nbsp;
+              <a href="javascript:;" onclick="updateStatus('<%= row._id %>', 3)">驳回</a>&nbsp;&nbsp;
+              <% } %>
+              <a href="javascript:;" onclick="showAudio('<%= row._id %>','play')">播放</a>&nbsp;&nbsp;
+              <a href="javascript:;" onclick="viewQaResult('<%= row._id %>','play')">查看结果</a>
+            </td>
+          </tr>
+        <% } %>
+      <% } else { %>
+        <tr>
+          <td colspan="9" style="text-align:center;">暂无数据</td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+<%-common.paging("/inspections/reviews", "from="+from+"&to="+to+"&recheck_status="+recheckStatus, totalPage, offset, limit, 5)%>
+
+<% include ../inspections/inspection_result_modal %>
+<% include ../inspections/audio_play_modal %>
+<script>
+var from, to;
+
+$(function() {
+  activeUrl();
+  initSearchQuery()
+    //初始化下拉框
+  $('.ui.dropdown').dropdown();
+  //初始化日期
+  initDatePicker()
+});
+
+function search() {
+  var recheckStatus = $('select[name="recheckStatus').val()
+  if($('.datarangeInput').val()!=="选择时间"){
+    var dateRange = $('.datarangeInput').val().split('至');
+    from = parseInt(moment(dateRange[0].trim()).valueOf());
+    to = parseInt(moment(dateRange[1].trim()).valueOf());
+  }
+
+  location.href = encodeURI("?from=" + from + "&to=" + to + "&recheck_status=" + recheckStatus);
+}
+
+//初始化search query
+function initSearchQuery() {
+  $('select[name="recheckStatus"]').val($('select[name="recheckStatus"]').attr('data-value'))
+
+  from = $('input[name="daterange"]').attr('data-from')
+  to = $('input[name="daterange"]').attr('data-to')
+  from = from !== ''?Number(from):'';
+  to = to!==''?Number(to):'';
+  //设定input默认时间
+  if (from !== '' && to !== '') {
+    $('input[name="daterange"]').val(moment(from).format('YYYY-MM-DD HH:mm') + " 至 " + moment(to).format('YYYY-MM-DD HH:mm'));
+  } else {
+    $('input[name="daterange"]').val('选择时间');
+  }
+}
+//更新复议状态
+function updateStatus(audio, status) {
+  var audio = audio
+  console.log(audio)
+  var title = ''
+  var qaInfo = ''
+  var qaStatus = 1
+  if(status === 2){
+    title = "确认通过复议申请？"
+    qaInfo = {
+      person_score: audio.person_score,
+      person_result: audio.person_result,
+      decrease_reason: audio.decrease_reason,
+      qa_person: audio.qa_person,
+      assign_to: audio.assign_to
+    }
+    qaStatus = 0
+  } else if(status === 3) {
+    title = "确认驳回申请？"
+  }
+  var params = {
+    recheck_status: status,
+    qaInfo: JSON.stringify(qaInfo),
+    qaStatus: qaStatus
+  }
+
+  swal({
+      title: title,
+      text: "",
+      type: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#DD6B55",
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      closeOnConfirm: false,
+      closeOnCancel: true
+    },
+    function(isConfirm) {
+      if (isConfirm) {
+        $.ajax({
+          type: "put",
+          url: "/inspections/reviews/update/" + audio._id,
+          data: params,
+          success: function(data) {
+            swal("操作成功", "", "success");
+            window.location.reload()
+          },
+          error: function() {
+            swal("失败，请重试", "", "error");
+          }
+        });
+      }
+    });
+}
+</script>

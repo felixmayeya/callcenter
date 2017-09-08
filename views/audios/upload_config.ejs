@@ -1,0 +1,1233 @@
+<style>
+  .contbox{
+    margin-top: 50px;
+  }
+  .ui.table tr td:nth-of-type(3){
+    background: rgba(0,0,0,.03);
+    font-weight: 700;
+    color: rgba(0,0,0,.95);
+    border-left: 1px solid rgba(102,102,102,.15);
+    border-right: 1px solid rgba(102,102,102,.15);
+  }
+  .ui.list{
+    width: 50%;
+    float: left;
+  }
+  .ui.list .item .header{
+    display: inline-block;
+    margin-right: 15px;
+  }
+  #newListApi .ontext,#editList .ontext{
+    height: 80px;
+    resize:none;
+  }
+</style>
+
+
+<div class="ui blue right floated dropdown buttons" style="width:125px;margin-left:10px;">
+  <div class="ui button" style="width:125px">添加配置</div>
+  <div class="menu">
+    <div class="item" onclick="$('#newListCopy').modal({'autofocus':false,'closable':false,onApprove:function(){return false}}).modal('show');$('#newListCopy form')[0].reset()"> FTP/文件拷贝</div>
+    <div class="item" onclick="$('#newListApi').modal({'autofocus':false,'closable':false,onApprove:function(){return false}}).modal('show');$('#newListApi form')[0].reset()"> HTTP接口方式</div>
+  </div>
+</div>
+<div class="ui blue right floated button" onclick="goEdit()">编辑当前配置</div>
+
+<div class="contbox">
+  <%
+      if(row['import_type']==="1"){
+        %>
+  <div class="cont clearfix">
+    <h4 class="ui horizontal divider header"><i class="list layout icon"></i> 基本配置 </h4>
+    <div class="ui list">
+      <div class="item">
+        <div class="header">导入类型</div>FTP/文件拷贝
+      </div>
+      <div class="item">
+        <div class="header">音频路径</div><%= row['radio_path']%>
+      </div>
+      <div class="item">
+        <div class="header">上传方式</div><%=row['upload_type']==0?"手动":"自动"%>
+      </div>
+      <div class="item">
+        <div class="header">所属业务</div><%= common.get_sys_name(row.system, systemList) %>
+      </div>
+    </div>
+    <div class="ui list">
+      <div class="item">
+        <div class="header">文件类型</div>
+        <%
+        if(row['file_type']==="0"){
+          %>
+          CSV
+          <%
+        }else if(row['file_type']==="1"){
+          %>
+          JSON
+          <%
+        }else if(row['file_type']==="2"){
+          %>
+          XML
+          <%
+        }
+        %>
+      </div>
+      <div class="item">
+        <div class="header">话单路径</div><%= row['files_path']%>
+      </div>
+      <%
+      if(row['upload_type']==="1"){
+        %>
+        <div class="item">
+          <div class="header">自动导入定时</div><%= row['item_auto_time']%>
+        </div>
+        <%
+      }else if(row['upload_type']==="0"){
+        %>
+        <div class="item">
+          <div class="header"></div>
+        </div>
+        <%
+      }
+      %>
+      <div class="item">
+        <div class="header"></div>
+      </div>
+    </div>
+    <h4 class="ui horizontal divider header"><i class="keyboard icon"></i> 详细配置 </h4>
+    <table class="ui definition table">
+      <tbody>
+        <tr>
+          <td class="two wide column">录音流水号字段名称</td>
+          <td><%= row['items']['item_seq']%></td>
+          <td class="two wide column">坐席工号的字段名称</td>
+          <td><%= row['items']['item_sit_number']%></td>
+        </tr>
+        <tr>
+          <td>来电号码</td>
+          <td><%= row['items']['item_mobile']%></td>
+          <td>呼叫时间</td>
+          <td><%= row['items']['item_call_time']%></td>
+        </tr>
+        <tr>
+          <td>音频路径</td>
+          <td><%= row['items']['item_audio_path']%></td>
+          <td>客户标识</td>
+          <td><%= row['items']['item_customer_id']%></td>
+        </tr>
+        <tr>
+          <td>客户名称</td>
+          <td><%= row['items']['item_customer_name']%></td>
+          <td>话后总结</td>
+          <td><%= row['items']['item_end_comment']%></td>
+        </tr>
+        <tr>
+          <td>满意度评价</td>
+          <td><%= row['items']['item_satisfy_comment']%></td>
+          <td>通话时长</td>
+          <td><%= row['items']['item_call_duration']%></td>
+        </tr>
+        <tr>
+          <td>坐席组</td>
+          <td><%= row['items']['item_sit_team']%></td>
+          <td>接入渠道</td>
+          <td><%= row['items']['item_channel']%></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+      <%
+    }else if(row['import_type']==="3"){
+      %>
+  <div class="cont" style="display:hidden">
+    <h4 class="ui horizontal divider header"><i class="list layout icon"></i> 基本配置 </h4>
+    <div class="ui list">
+      <div class="item">
+        <div class="header">导入类型</div>HTTP接口方式
+      </div>
+      <div class="item">
+        <div class="header">音频路径</div><%= row['radio_path']%>
+      </div>
+      <div class="item">
+        <div class="header">上传方式</div><%=row['upload_type']==0?"手动":"自动"%>
+      </div>
+    </div>
+    <div class="ui list">
+      <div class="item">
+        <div class="header">所属业务</div><%= common.get_sys_name(row.system, systemList) %>
+      </div>
+      <div class="item">
+        <div class="header">话单路径</div><%= row['files_path']%>
+      </div>
+      <%
+      if(row['upload_type']==="1"){
+        %>
+        <div class="item">
+          <div class="header">自动导入定时</div><%= row['item_auto_time']%>
+        </div>
+        <%
+      }else if(row['upload_type']==="0"){
+        %>
+        <div class="item">
+          <div class="header"></div>
+        </div>
+        <%
+      }
+      %>
+      <div class="item">
+        <div class="header"></div>
+      </div>
+    </div>
+    <h4 class="ui horizontal divider header"><i class="keyboard icon"></i> 详细配置 </h4>
+    <table class="ui definition table">
+      <tbody>
+        <tr>
+          <td class="two wide column">录音流水号字段名称</td>
+          <td><%= row['items']['item_seq']%></td>
+          <td class="two wide column">坐席工号的字段名称</td>
+          <td><%= row['items']['item_sit_number']%></td>
+        </tr>
+        <tr>
+          <td>来电号码</td>
+          <td><%= row['items']['item_mobile']%></td>
+          <td>呼叫时间</td>
+          <td><%= row['items']['item_call_time']%></td>
+        </tr>
+        <tr>
+          <td>音频路径</td>
+          <td><%= row['items']['item_audio_path']%></td>
+          <td>客户标识</td>
+          <td><%= row['items']['item_customer_id']%></td>
+        </tr>
+        <tr>
+          <td>客户名称</td>
+          <td><%= row['items']['item_customer_name']%></td>
+          <td>话后总结</td>
+          <td><%= row['items']['item_end_comment']%></td>
+        </tr>
+        <tr>
+          <td>满意度评价</td>
+          <td><%= row['items']['item_satisfy_comment']%></td>
+          <td>通话时长</td>
+          <td><%= row['items']['item_call_duration']%></td>
+        </tr>
+        <tr>
+          <td>坐席组</td>
+          <td><%= row['items']['item_sit_team']%></td>
+          <td>接入渠道</td>
+          <td><%= row['items']['item_channel']%></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+      <%
+    }
+  %>
+</div>
+
+<div class="ui modal" id="modalBox">
+  <div class="ui modal" id="newListCopy">
+    <i class="close icon"></i>
+    <div class="tiny header">
+      添加导入配置--FTP/文件拷贝
+    </div>
+    <div class="content">
+      <form class="ui form">
+        <h4 class="ui horizontal divider header"> 基本配置 </h4>
+        <div class="three fields">
+          <div class="field">
+            <label class="required_input">音频路径</label>
+            <div class="ui left input">
+              <input name="radio_path" type="text" onKeyup="specc(this);checkLengthList(this);" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="required_input">话单路径</label>
+            <div class="ui left input">
+              <input name="files_path" type="text" onKeyup="specc(this);checkLengthList(this);" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="required_input">文件类型</label>
+            <div class="ui radio checkbox">
+              <input type="radio" name="file_type" value="0" checked="checked">
+              <label>CSV</label>
+            </div>&nbsp;&nbsp;&nbsp;&nbsp;
+            <div class="ui radio checkbox">
+              <input type="radio" name="file_type" value="1">
+              <label>JSON</label>
+            </div>&nbsp;&nbsp;&nbsp;&nbsp;
+            <div class="ui radio checkbox">
+              <input type="radio" name="file_type" value="2">
+              <label>XML</label>
+            </div>
+          </div>
+        </div>
+        <div class="three fields">
+          <div class="field">
+            <label class="required_input">上传方式</label>
+            <div class="ui radio checkbox">
+              <input type="radio" name="upload_type" value="0" checked="checked">
+              <label>手动</label>
+            </div>&nbsp;&nbsp;&nbsp;&nbsp;
+            <div class="ui radio checkbox">
+              <input type="radio" name="upload_type" value="1">
+              <label>自动</label>
+            </div>
+          </div>
+          <div class="field">
+            <label class="">自动导入时间设置</label>
+            <div class="ui left input">
+              <input name="item_auto_time" type="text" onKeyup="spec(this);checkLengthList(this);" readonly=true/>
+            </div>
+          </div>
+          <div class="field">
+            <label class="required_input">所属业务</label>
+            <select name="system" class="ui dropdown">
+              <%
+                for (var i in systemList) {
+                  var _systemList = systemList[i];
+              %>
+              <option value="<%=_systemList['_id']%>"><%=_systemList['name']%></option>
+                  <%
+              }
+              %>
+            </select>
+          </div>
+        </div>
+        <h4 class="ui horizontal divider header"> 详细配置（字段名称） </h4>
+        <div class="three fields">
+          <div class="field">
+            <label class="required_input">录音流水号</label>
+            <div class="ui left input">
+              <input name="item_seq" type="text" onKeyup="spec(this);checkLengthList(this);" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="required_input">坐席工号</label>
+            <div class="ui left input">
+              <input name="item_sit_number" type="text" onKeyup="spec(this);checkLengthList(this);" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="required_input">音频路径</label>
+            <div class="ui left input">
+              <input name="item_audio_path" type="text" onKeyup="spec(this);checkLengthList(this);" />
+            </div>
+          </div>
+        </div>
+        <div class="three fields">
+          <div class="field">
+            <label class="required_input">来电号码</label>
+            <div class="ui left input">
+              <input name="item_mobile" type="text" onKeyup="spec(this);checkLengthList(this);" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="required_input">呼叫时间</label>
+            <div class="ui left input">
+              <input name="item_call_time" type="text" onKeyup="spec(this);checkLengthList(this);" />
+            </div>
+          </div>
+          <div class="field">
+            <label>通话时长</label>
+            <div class="ui left input">
+              <input name="item_call_duration" type="text" onKeyup="spec(this);checkLengthList(this);" />
+            </div>
+          </div>
+        </div>
+        <div class="three fields">
+          <div class="field">
+            <label>客户标识</label>
+            <div class="ui left input">
+              <input name="item_customer_id" type="text" onKeyup="spec(this);checkLengthList(this);" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="required_input">客户名称</label>
+            <div class="ui left input">
+              <input name="item_customer_name" type="text" onKeyup="spec(this);checkLengthList(this);" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="required_input">话后总结</label>
+            <div class="ui left input">
+              <input name="item_end_comment" type="text" onKeyup="spec(this);checkLengthList(this);" />
+            </div>
+          </div>
+        </div>
+        <div class="three fields">
+          <div class="field">
+            <label class="required_input">满意度评价</label>
+            <div class="ui left input">
+              <input name="item_satisfy_comment" type="text" onKeyup="spec(this);checkLengthList(this);" />
+            </div>
+          </div>
+          <div class="field">
+            <label>坐席组</label>
+            <div class="ui left input">
+              <input name="item_sit_team" type="text" onKeyup="spec(this);checkLengthList(this);" />
+            </div>
+          </div>
+          <div class="field">
+            <label>接入渠道</label>
+            <div class="ui left input">
+              <input name="item_channel" type="text" onKeyup="spec(this);checkLengthList(this);" />
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="actions">
+      <div class="ui black deny button">取消</div>
+      <div class="ui positive submit right labeled icon button" onClick="newListCopy()">保存<i class="checkmark icon"></i></div>
+    </div>
+  </div>
+
+  <div class="ui modal" id="newListApi">
+    <i class="close icon"></i>
+    <div class="tiny header">
+      添加导入配置--HTTP接口方式
+    </div>
+    <div class="content">
+      <form class="ui form">
+        <div class="field">
+          <h4 class="ui horizontal divider header"> 基本配置 </h4>
+          <div class="three fields">
+            <div class="field">
+              <label class="required_input">音频路径</label>
+              <div class="ui left input">
+                <input name="radio_path" type="text" onKeyup="specc(this);checkLengthList(this);" />
+              </div>
+            </div>
+            <div class="field">
+              <label class="required_input">接口名称</label>
+              <div class="ui left input">
+                <input name="interface_name" type="text" onKeyup="specc(this);" />
+              </div>
+            </div>
+            <div class="field">
+              <label class="required_input">所属业务</label>
+              <select name="system" class="ui dropdown">
+                <%
+                  for (var i in systemList) {
+                    var _systemList = systemList[i];
+                %>
+                <option value="<%=_systemList['_id']%>"><%=_systemList['name']%></option>
+                    <%
+                }
+                %>
+              </select>
+            </div>
+
+          </div>
+          <div class="three fields">
+            <div class="field">
+              <label class="required_input">话单路径</label>
+              <div class="ui left input">
+                <input name="files_path" type="text" onKeyup="specc(this);checkLengthList(this);" />
+              </div>
+            </div>
+            <div class="field">
+              <label class="required_input">上传方式</label>
+              <div class="ui radio checkbox">
+                <input type="radio" name="upload_type" value="0" checked="checked">
+                <label>手动</label>
+              </div>&nbsp;&nbsp;&nbsp;&nbsp;
+              <div class="ui radio checkbox">
+                <input type="radio" name="upload_type" value="1">
+                <label>自动</label>
+              </div>
+            </div>
+            <div class="field">
+              <label class="">自动导入时间设置</label>
+              <div class="ui left input">
+                <input name="item_auto_time" type="text" onKeyup="spec(this);checkLengthList(this);" readonly=true/>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label class="required_input">请求参数</label>
+            <div class="ui left input">
+              <textarea class="ontext" name="interface_input" type="text" onKeyup="specc(this);"></textarea>
+            </div>
+          </div>
+          <h4 class="ui horizontal divider header"> 输出参数（字段名称） </h4>
+          <div class="three fields">
+            <div class="field">
+              <label class="required_input">录音流水号</label>
+              <div class="ui left input">
+                <input name="item_seq" type="text" onKeyup="spec(this);checkLengthList(this);" />
+              </div>
+            </div>
+            <div class="field">
+              <label class="required_input">坐席工号</label>
+              <div class="ui left input">
+                <input name="item_sit_number" type="text" onKeyup="spec(this);checkLengthList(this);" />
+              </div>
+            </div>
+            <div class="field">
+              <label class="required_input">音频路径</label>
+              <div class="ui left input">
+                <input name="item_call_time" type="text" onKeyup="spec(this);checkLengthList(this);" />
+              </div>
+            </div>
+          </div>
+          <div class="three fields">
+            <div class="field">
+              <label class="required_input">来电号码</label>
+              <div class="ui left input">
+                <input name="item_mobile" type="text" onKeyup="spec(this);checkLengthList(this);" />
+              </div>
+            </div>
+            <div class="field">
+              <label class="required_input">呼叫时间</label>
+              <div class="ui left input">
+                <input name="item_call_time" type="text" onKeyup="spec(this);checkLengthList(this);" />
+              </div>
+            </div>
+            <div class="field">
+              <label>通话时长</label>
+              <div class="ui left input">
+                <input name="item_call_duration" type="text" onKeyup="spec(this);checkLengthList(this);" />
+              </div>
+            </div>
+          </div>
+          <div class="three fields">
+            <div class="field">
+              <label>客户标识</label>
+              <div class="ui left input">
+                <input name="item_customer_id" type="text" onKeyup="spec(this);checkLengthList(this);" />
+              </div>
+            </div>
+            <div class="field">
+              <label class="required_input">客户名称</label>
+              <div class="ui left input">
+                <input name="item_customer_name" type="text" onKeyup="spec(this);checkLengthList(this);" />
+              </div>
+            </div>
+            <div class="field">
+              <label class="required_input">话后总结</label>
+              <div class="ui left input">
+                <input name="item_end_comment" type="text" onKeyup="spec(this);checkLengthList(this);" />
+              </div>
+            </div>
+          </div>
+          <div class="three fields">
+            <div class="field">
+              <label class="required_input">满意度评价</label>
+              <div class="ui left input">
+                <input name="item_satisfy_comment" type="text" onKeyup="spec(this);checkLengthList(this);" />
+              </div>
+            </div>
+            <div class="field">
+              <label>坐席组</label>
+              <div class="ui left input">
+                <input name="item_sit_team" type="text" onKeyup="spec(this);checkLengthList(this);" />
+              </div>
+            </div>
+            <div class="field">
+              <label>接入渠道</label>
+              <div class="ui left input">
+                <input name="item_channel" type="text" onKeyup="spec(this);checkLengthList(this);" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="actions">
+      <div class="ui black deny button">取消</div>
+      <div class="ui positive submit right labeled icon button" onClick="newListApi()">保存<i class="checkmark icon"></i></div>
+    </div>
+  </div>
+</div>
+<div class="ui modal" id="editList" data-id="<%= row['_id']%>">
+  <i class="close icon"></i>
+  <%
+      if(row['import_type']==="1"){
+        %>
+  <div class="tiny header">
+    编辑导入配置--FTP/文件拷贝
+  </div>
+  <div class="content">
+    <form class="ui form">
+      <h4 class="ui horizontal divider header"> 基本配置 </h4>
+      <div class="three fields">
+        <div class="field">
+          <label class="required_input">音频路径</label>
+          <div class="ui left input">
+            <input name="radio_path" type="text" onKeyup="specc(this);checkLengthList(this);" value="<%= row['radio_path']%>"/>
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">话单路径</label>
+          <div class="ui left input">
+            <input name="files_path" type="text" onKeyup="specc(this);checkLengthList(this);" value="<%= row['files_path']%>"/>
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">文件类型</label>
+          <div class="ui radio checkbox">
+            <input type="radio" name="file_type" value="0" checked="checked">
+            <label>CSV</label>
+          </div>&nbsp;&nbsp;&nbsp;&nbsp;
+          <div class="ui radio checkbox">
+            <input type="radio" name="file_type" value="1">
+            <label>JSON</label>
+          </div>&nbsp;&nbsp;&nbsp;&nbsp;
+          <div class="ui radio checkbox">
+            <input type="radio" name="file_type" value="2">
+            <label>XML</label>
+          </div>
+        </div>
+      </div>
+      <div class="three fields">
+        <div class="field">
+          <label class="required_input">上传方式</label>
+          <div class="ui radio checkbox">
+            <input type="radio" name="upload_type" value="0" checked="checked">
+            <label>手动</label>
+          </div>&nbsp;&nbsp;&nbsp;&nbsp;
+          <div class="ui radio checkbox">
+            <input type="radio" name="upload_type" value="1">
+            <label>自动</label>
+          </div>
+        </div>
+        <div class="field">
+          <label class="">自动导入时间设置</label>
+          <div class="ui left input">
+            <input name="item_auto_time" type="text" onKeyup="spec(this);checkLengthList(this);" readonly=true value="<%= row['item_auto_time']%>"/>
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">所属业务</label>
+          <select name="system" class="ui dropdown">
+            <%
+              for (var i in systemList) {
+                var _systemList = systemList[i];
+            %>
+            <option value="<%=_systemList['_id']%>"><%=_systemList['name']%></option>
+                <%
+            }
+            %>
+          </select>
+        </div>
+      </div>
+      <h4 class="ui horizontal divider header"> 详细配置（字段名称） </h4>
+      <div class="three fields">
+        <div class="field">
+          <label class="required_input">录音流水号</label>
+          <div class="ui left input">
+            <input name="item_seq" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_seq']%>"/>
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">坐席工号</label>
+          <div class="ui left input">
+            <input name="item_sit_number" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_sit_number']%>" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">音频路径</label>
+          <div class="ui left input">
+            <input name="item_audio_path" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_audio_path']%>" />
+          </div>
+        </div>
+      </div>
+      <div class="three fields">
+        <div class="field">
+          <label class="required_input">来电号码</label>
+          <div class="ui left input">
+            <input name="item_mobile" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_mobile']%>" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">呼叫时间</label>
+          <div class="ui left input">
+            <input name="item_call_time" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_call_time']%>" />
+          </div>
+        </div>
+        <div class="field">
+          <label>通话时长</label>
+          <div class="ui left input">
+            <input name="item_call_duration" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_call_duration']%>" />
+          </div>
+        </div>
+      </div>
+      <div class="three fields">
+        <div class="field">
+          <label class="required_input">客户标识</label>
+          <div class="ui left input">
+            <input name="item_customer_id" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_customer_id']%>" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">客户名称</label>
+          <div class="ui left input">
+            <input name="item_customer_name" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_customer_name']%>" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">话后总结</label>
+          <div class="ui left input">
+            <input name="item_end_comment" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_end_comment']%>" />
+          </div>
+        </div>
+      </div>
+      <div class="three fields">
+        <div class="field">
+          <label class="required_input">满意度评价</label>
+          <div class="ui left input">
+            <input name="item_satisfy_comment" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_satisfy_comment']%>" />
+          </div>
+        </div>
+        <div class="field">
+          <label>坐席组</label>
+          <div class="ui left input">
+            <input name="item_sit_team" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_sit_team']%>" />
+          </div>
+        </div>
+        <div class="field">
+          <label>接入渠道</label>
+          <div class="ui left input">
+            <input name="item_channel" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_channel']%>" />
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+  <div class="actions">
+    <div class="ui black deny button">取消</div>
+    <div class="ui positive submit right labeled icon button" onClick="editListCopy()">保存<i class="checkmark icon"></i></div>
+  </div>
+    <%
+  }else if(row['import_type']==="3"){
+    %>
+  <div class="tiny header">
+    编辑导入配置--HTTP接口方式
+  </div>
+  <div class="content">
+    <form class="ui form">
+      <h4 class="ui horizontal divider header"> 基本配置 </h4>
+      <div class="three fields">
+        <div class="field">
+          <label class="required_input">音频路径</label>
+          <div class="ui left input">
+            <input name="radio_path" type="text" onKeyup="specc(this);checkLengthList(this);" value="<%= row['radio_path']%>" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">接口名称</label>
+          <div class="ui left input">
+            <input name="interface_name" type="text" onKeyup="specc(this);" value="<%= row['interface_name']%>" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">所属业务</label>
+          <select name="system" class="ui dropdown">
+            <%
+              for (var i in systemList) {
+                var _systemList = systemList[i];
+            %>
+            <option value="<%=_systemList['_id']%>"><%=_systemList['name']%></option>
+                <%
+            }
+            %>
+          </select>
+        </div>
+
+      </div>
+      <div class="three fields">
+        <div class="field">
+          <label class="required_input">话单路径</label>
+          <div class="ui left input">
+            <input name="files_path" type="text" onKeyup="specc(this);checkLengthList(this);" value="<%= row['files_path']%>" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">上传方式</label>
+          <div class="ui radio checkbox">
+            <input type="radio" name="upload_type" value="0" checked="checked">
+            <label>手动</label>
+          </div>&nbsp;&nbsp;&nbsp;&nbsp;
+          <div class="ui radio checkbox">
+            <input type="radio" name="upload_type" value="1">
+            <label>自动</label>
+          </div>
+        </div>
+        <div class="field">
+          <label class="">自动导入时间设置</label>
+          <div class="ui left input">
+            <input name="item_auto_time" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['item_auto_time']%>" readonly=true/>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">请求参数</label>
+        <div class="ui left input">
+          <textarea class="ontext" name="interface_input" type="text" onKeyup="specc(this);" value="<%= row['interface_input']%>"></textarea>
+        </div>
+      </div>
+      <h4 class="ui horizontal divider header"> 输出参数（字段名称） </h4>
+      <div class="three fields">
+        <div class="field">
+          <label class="required_input">录音流水号</label>
+          <div class="ui left input">
+            <input name="item_seq" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_seq']%>"/>
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">坐席工号</label>
+          <div class="ui left input">
+            <input name="item_sit_number" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_sit_number']%>" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">音频路径</label>
+          <div class="ui left input">
+            <input name="item_call_time" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_call_time']%>" />
+          </div>
+        </div>
+      </div>
+      <div class="three fields">
+        <div class="field">
+          <label class="required_input">来电号码</label>
+          <div class="ui left input">
+            <input name="item_mobile" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_mobile']%>" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">呼叫时间</label>
+          <div class="ui left input">
+            <input name="item_call_time" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_call_time']%>" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">通话时长</label>
+          <div class="ui left input">
+            <input name="item_call_duration" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_call_duration']%>" />
+          </div>
+        </div>
+      </div>
+      <div class="three fields">
+        <div class="field">
+          <label class="required_input">客户标识</label>
+          <div class="ui left input">
+            <input name="item_customer_id" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_customer_id']%>" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">客户名称</label>
+          <div class="ui left input">
+            <input name="item_customer_name" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_customer_name']%>" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="required_input">话后总结</label>
+          <div class="ui left input">
+            <input name="item_end_comment" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_end_comment']%>" />
+          </div>
+        </div>
+      </div>
+      <div class="three fields">
+        <div class="field">
+          <label class="required_input">满意度评价</label>
+          <div class="ui left input">
+            <input name="item_satisfy_comment" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_satisfy_comment']%>" />
+          </div>
+        </div>
+        <div class="field">
+          <label>坐席组</label>
+          <div class="ui left input">
+            <input name="item_sit_team" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_sit_team']%>" />
+          </div>
+        </div>
+        <div class="field">
+          <label>接入渠道</label>
+          <div class="ui left input">
+            <input name="item_channel" type="text" onKeyup="spec(this);checkLengthList(this);" value="<%= row['items']['item_channel']%>" />
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+  <div class="actions">
+    <div class="ui black deny button">取消</div>
+    <div class="ui positive submit right labeled icon button" onClick="editListApi()">保存<i class="checkmark icon"></i></div>
+  </div>
+    <%
+  }
+  %>
+</div>
+
+
+<script>
+  var typeList = ["","文件拷贝","FTP方式","HTTP接口方式"];
+  var rows=<%- JSON.stringify(row)%>;
+  $(function(){
+    activeUrl();
+    // $("input[name='item_auto_time']").jeDate({format:"hh:mm:ss"});
+    $(".dropdown").dropdown();
+    $("input[name='item_auto_time']").daterangepicker({
+    "singleDatePicker": true,
+    "timePicker12Hour": false,
+    "timePicker": true,
+    "timePicker24Hour": true,
+    "timePickerSeconds": true,
+    "timePickerIncrement": 1,
+    "format": 'YYYY-MM-DD HH:mm:ss',
+    "locale": {
+      applyLabel: '确定',
+      cancelLabel: '关闭',
+      customRangeLabel: "自定义日期",
+      daysOfWeek: ["日", "一", "二", "三", "四", "五", "六"],
+      monthNames: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
+    },
+    }, function(start, end, label) {});
+    if(rows['upload_type'] === "0"){
+      $("input[name='item_auto_time']").val("").prop("disabled",true);
+    }
+  })
+
+  //input特殊符号验证
+  var specc = function(obj) {
+    var pattern = new RegExp("[`~!@%#$^&*()=|{}';',\\[\\]<>?／＼］\\；：%……+￥（）【】‘”“'．。，、？１２３４５６７８９０－＝＿＋～？！＠＃＄％＾＆＊——）-]");
+    if(pattern.test($(obj).val())){
+      $(obj).val("");
+      swal("不得输入特殊符号！请更改", "", "warning");
+    }
+  };
+
+  function checkLengthList(obj){
+    var str = $(obj).val();
+    if(str.length > 30){
+      swal("输入内容长度请勿超过30","","warning");
+      $(obj).val(str.substring(0,30));
+    }
+  }
+
+  $("#newListCopy input[name='upload_type']").change(function(){
+    if($(this).val() === "0"){
+      $("#newListCopy input[name='item_auto_time']").val("").prop("disabled",true);
+    }else{
+      $("#newListCopy input[name='item_auto_time']").prop("disabled",false);
+    }
+  })
+  $("#editList input[name='upload_type']").change(function(){
+    if($(this).val() === "0"){
+      $("#editList input[name='item_auto_time']").val("").prop("disabled",true);
+    }else{
+      $("#editList input[name='item_auto_time']").prop("disabled",false);
+    }
+  })
+  $("#newListApi input[name='upload_type']").change(function(){
+    if($(this).val() === "0"){
+      $("#newListApi input[name='item_auto_time']").val("").prop("disabled",true);
+    }else{
+      $("#newListApi input[name='item_auto_time']").prop("disabled",false);
+    }
+  })
+
+  function newListCopy(){
+    var inputList = $("#newListCopy input").not("#newListCopy input[name='item_auto_time'],#newListCopy input[name='item_call_duration'],#newListCopy input[name='item_customer_id'],#newListCopy input[name='item_sit_team'],#newListCopy input[name='item_channel']").add("#newListCopy select");
+    for(var i = 0;i < inputList.length;i++){
+      if(inputList[i].value === ""){
+        swal("请填写完整表单后再保存","","warning");
+        return false;
+      }
+    }
+
+    var newList = {
+      import_type: "1",
+      radio_path: $("#newListCopy input[name='radio_path']").val(),
+      files_path: $("#newListCopy input[name='files_path']").val(),
+      upload_type: $("#newListCopy input[name='upload_type']:checked").val(),
+      file_type: $("#newListCopy input[name='file_type']:checked").val(),
+      item_auto_time: $("#newListCopy input[name='item_auto_time']").val(),
+      system: $("#newListCopy select[name='system']").val(),
+      items: {
+        item_seq: $("#newListCopy input[name='item_seq']").val(),
+        item_sit_number: $("#newListCopy input[name='item_sit_number']").val(),
+        item_mobile: $("#newListCopy input[name='item_mobile']").val(),
+        item_call_time: $("#newListCopy input[name='item_call_time']").val(),
+        item_audio_path: $("#newListCopy input[name='item_audio_path']").val(),
+        item_customer_id: $("#newListCopy input[name='item_customer_id']").val(),
+        item_customer_name: $("#newListCopy input[name='item_customer_name']").val(),
+        item_end_comment: $("#newListCopy input[name='item_end_comment']").val(),
+        item_satisfy_comment: $("#newListCopy input[name='item_satisfy_comment']").val(),
+        item_call_duration: $("#newListCopy input[name='item_call_duration']").val(),
+        item_sit_team: $("#newListCopy input[name='item_sit_team']").val(),
+        item_channel: $("#newListCopy input[name='item_channel']").val()
+      }
+    }
+    $.ajax({
+      type: "post",
+      url: "/audios/importConfigAdd",
+      data: newList,
+      success: function(data){
+        if(data.code === "20000"){
+          swal({
+              title: "配置成功",
+              text: "",
+              type: "success",
+              confirmButtonText: "确定",
+            },
+            function() {
+              setTimeout(function() {
+                location.reload();
+              }, 330);
+            });
+        }else{
+          swal({
+              title: "配置失败，请重试",
+              text: "",
+              type: "error",
+              confirmButtonText: "确定",
+            });
+        }
+      },
+      error: function(){
+        swal({
+            title: "配置失败，请重试",
+            text: "",
+            type: "error",
+            confirmButtonText: "确定",
+          });
+      }
+    })
+
+  }
+
+  function newListApi(){
+    var inputList = $("#newListApi input").not("#newListApi input[name='item_auto_time'],#newListApi input[name='item_call_duration'],#newListApi input[name='item_customer_id'],#newListApi input[name='item_sit_team'],#newListApi input[name='item_channel']").add("#newListApi select").add("#newListApi textarea");
+    for(var i = 0;i < inputList.length;i++){
+      if(inputList[i].value === ""){
+        swal("请填写完整表单后再保存","","warning");
+        return false;
+      }
+    }
+
+    var newList = {
+      import_type: "1",
+      radio_path: $("#newListApi input[name='radio_path']").val(),
+      files_path: $("#newListApi input[name='files_path']").val(),
+      upload_type: $("#newListApi input[name='upload_type']:checked").val(),
+      item_auto_time: $("#newListApi input[name='item_auto_time']").val(),
+      interface_name: $("#newListApi input[name='interface_name']").val(),
+      interface_input: $("#newListApi textarea[name='interface_input']").val(),
+      system: $("#newListApi select[name='system']").val(),
+      items: {
+        item_seq: $("#newListApi input[name='item_seq']").val(),
+        item_sit_number: $("#newListApi input[name='item_sit_number']").val(),
+        item_mobile: $("#newListApi input[name='item_mobile']").val(),
+        item_call_time: $("#newListApi input[name='item_call_time']").val(),
+        item_audio_path: $("#newListApi input[name='item_audio_path']").val(),
+        item_customer_id: $("#newListApi input[name='item_customer_id']").val(),
+        item_customer_name: $("#newListApi input[name='item_customer_name']").val(),
+        item_end_comment: $("#newListApi input[name='item_end_comment']").val(),
+        item_satisfy_comment: $("#newListApi input[name='item_satisfy_comment']").val(),
+        item_call_duration: $("#newListApi input[name='item_call_duration']").val(),
+        item_sit_team: $("#newListApi input[name='item_sit_team']").val(),
+        item_channel: $("#newListApi input[name='item_channel']").val()
+      }
+    }
+    $.ajax({
+      type: "post",
+      url: "/audios/importConfigAdd",
+      data: newList,
+      success: function(data){
+        if(data.code === "20000"){
+          swal({
+              title: "配置成功",
+              text: "",
+              type: "success",
+              confirmButtonText: "确定",
+            },
+            function() {
+              setTimeout(function() {
+                location.reload();
+              }, 330);
+            });
+        }else{
+          swal({
+              title: "配置失败，请重试",
+              text: "",
+              type: "error",
+              confirmButtonText: "确定",
+            });
+        }
+      },
+      error: function(){
+        swal({
+            title: "配置失败，请重试",
+            text: "",
+            type: "error",
+            confirmButtonText: "确定",
+          });
+      }
+    })
+
+  }
+
+  function goEdit(){
+    if(rows.import_type === "1"){
+      $('#editList input[name="upload_type"][value="'+ rows.upload_type +'"]').prop("checked",true);
+      $('#editList input[name="file_type"][value="'+ rows.file_type +'"]').prop("checked",true);
+      if(rows.upload_type === "0"){
+        $("#editList input[name='item_auto_time']").val("").prop("disabled",true);
+      }else{
+        $("#editList input[name='item_auto_time']").prop("disabled",false);
+      }
+    }else if(rows.import_type === "3"){
+      $('#editList input[name="upload_type"][value="'+ rows.upload_type +'"]').prop("checked",true);
+      if(rows.upload_type === "0"){
+        $("#editList input[name='item_auto_time']").val("").prop("disabled",true);
+      }else{
+        $("#editList input[name='item_auto_time']").prop("disabled",false);
+      }
+    }
+    $("#editList select[name='system']").dropdown("set selected",<%- JSON.stringify(row['system'])%>)
+    $('#editList').modal({'autofocus':false,'closable':false,onApprove:function(){return false}}).modal('show');
+  }
+
+  function editListCopy(){
+    var inputList = $("#editList input").not("#editList input[name='item_auto_time'],#editList input[name='item_call_duration'],#editList input[name='item_customer_id'],#editList input[name='item_sit_team'],#editList input[name='item_channel']").add("#editList select");
+    for(var i = 0;i < inputList.length;i++){
+      if(inputList[i].value === ""){
+        swal("请填写完整表单后再保存","","warning");
+        return false;
+      }
+    }
+
+    var editList = {
+      import_type: "1",
+      radio_path: $("#editList input[name='radio_path']").val(),
+      files_path: $("#editList input[name='files_path']").val(),
+      upload_type: $("#editList input[name='upload_type']:checked").val(),
+      file_type: $("#editList input[name='file_type']:checked").val(),
+      item_auto_time: $("#editList input[name='item_auto_time']").val(),
+      system: $("#editList select[name='system']").val(),
+      items: {
+        item_seq: $("#editList input[name='item_seq']").val(),
+        item_sit_number: $("#editList input[name='item_sit_number']").val(),
+        item_mobile: $("#editList input[name='item_mobile']").val(),
+        item_call_time: $("#editList input[name='item_call_time']").val(),
+        item_audio_path: $("#editList input[name='item_audio_path']").val(),
+        item_customer_id: $("#editList input[name='item_customer_id']").val(),
+        item_customer_name: $("#editList input[name='item_customer_name']").val(),
+        item_end_comment: $("#editList input[name='item_end_comment']").val(),
+        item_satisfy_comment: $("#editList input[name='item_satisfy_comment']").val(),
+        item_call_duration: $("#editList input[name='item_call_duration']").val(),
+        item_sit_team: $("#editList input[name='item_sit_team']").val(),
+        item_channel: $("#editList input[name='item_channel']").val()
+      }
+    }
+    $.ajax({
+      type: "put",
+      url: "/audios/importConfigEdit/"+rows._id,
+      data: {editList:JSON.stringify(editList)},
+      success: function(data){
+        if(data.code === "20000"){
+          swal({
+              title: "配置成功",
+              text: "",
+              type: "success",
+              confirmButtonText: "确定",
+            },
+            function() {
+              setTimeout(function() {
+                location.reload();
+              }, 330);
+            });
+        }else{
+          swal({
+              title: "配置失败，请重试",
+              text: "",
+              type: "error",
+              confirmButtonText: "确定",
+            });
+        }
+      },
+      error: function(){
+        swal({
+            title: "配置失败，请重试",
+            text: "",
+            type: "error",
+            confirmButtonText: "确定",
+          });
+      }
+    })
+  }
+
+  function editListApi(){
+    var inputList = $("#editList input").not("#editList input[name='item_auto_time'],#editList input[name='item_call_duration'],#editList input[name='item_customer_id'],#editList input[name='item_sit_team'],#editList input[name='item_channel']").add("#editList select").add("#editList textarea");
+    for(var i = 0;i < inputList.length;i++){
+      if(inputList[i].value === ""){
+        swal("请填写完整表单后再保存","","warning");
+        return false;
+      }
+    }
+
+    var editList = {
+      import_type: "1",
+      radio_path: $("#editList input[name='radio_path']").val(),
+      files_path: $("#editList input[name='files_path']").val(),
+      upload_type: $("#editList input[name='upload_type']:checked").val(),
+      item_auto_time: $("#editList input[name='item_auto_time']").val(),
+      interface_name: $("#editList input[name='interface_name']").val(),
+      interface_input: $("#editList textarea[name='interface_input']").val(),
+      system: $("#editList select[name='system']").val(),
+      items: {
+        item_seq: $("#editList input[name='item_seq']").val(),
+        item_sit_number: $("#editList input[name='item_sit_number']").val(),
+        item_mobile: $("#editList input[name='item_mobile']").val(),
+        item_call_time: $("#editList input[name='item_call_time']").val(),
+        item_audio_path: $("#editList input[name='item_audio_path']").val(),
+        item_customer_id: $("#editList input[name='item_customer_id']").val(),
+        item_customer_name: $("#editList input[name='item_customer_name']").val(),
+        item_end_comment: $("#editList input[name='item_end_comment']").val(),
+        item_satisfy_comment: $("#editList input[name='item_satisfy_comment']").val(),
+        item_call_duration: $("#editList input[name='item_call_duration']").val(),
+        item_sit_team: $("#editList input[name='item_sit_team']").val(),
+        item_channel: $("#editList input[name='item_channel']").val()
+      }
+    }
+    $.ajax({
+      type: "put",
+      url: "/audios/importConfigEdit/"+rows._id,
+      data: {editList:JSON.stringify(editList)},
+      success: function(data){
+        if(data.code === "20000"){
+          swal({
+              title: "配置成功",
+              text: "",
+              type: "success",
+              confirmButtonText: "确定",
+            },
+            function() {
+              setTimeout(function() {
+                location.reload();
+              }, 330);
+            });
+        }else{
+          swal({
+              title: "配置失败，请重试",
+              text: "",
+              type: "error",
+              confirmButtonText: "确定",
+            });
+        }
+      },
+      error: function(){
+        swal({
+            title: "配置失败，请重试",
+            text: "",
+            type: "error",
+            confirmButtonText: "确定",
+          });
+      }
+    })
+  }
+
+</script>

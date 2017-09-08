@@ -1,0 +1,270 @@
+<style>
+  #edit_rule_folder {
+    width: 500px;
+    margin-left: -250px;
+  }
+
+  #edit_rule_folder .dropdown.selection {
+    width: 100%;
+  }
+</style>
+
+
+<div class="ui form">
+  <div class="four fields">
+    <div class="field">
+      <label>规则集名称</label>
+      <input type="text" id="name" placeholder="" value="<%=name%>">
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit button" onclick="search()">
+        <i class="icon search"></i> 搜索
+      </div>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui blue submit right floated button" onclick="createRuleFolder();">
+        <i class="icon write"></i> 添加规则集
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+  <table class="ui small very basic table">
+    <thead>
+      <tr>
+        <th>序号</th>
+        <th>规则集名称</th>
+        <th>状态</th>
+        <th>备注</th>
+        <th>操作人</th>
+        <th>创建时间</th>
+        <th width="100"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <%
+        if (conts && conts.length > 0) {
+        %>
+        <%
+          for (var i in conts) {
+            var cont = conts[i];
+        %>
+          <tr>
+            <td>
+              <%=(Number(offset) + Number(i) + 1)%>
+            </td>
+            <td>
+              <%=cont['name']%>
+            </td>
+            <td>
+              <%=cont['status']==0?"禁用":"启用"%>
+            </td>
+            <td>
+              <%=cont['description']%>
+            </td>
+            <td>
+              <%=cont['username']%>
+            </td>
+            <td>
+              <%=common.format_date(cont['created'], 'yyyy-MM-dd hh:mm:ss')%>
+            </td>
+            <td style="text-align:right;">
+              <a href="javascript:;" onclick="editRuleFolder('<%=cont['_id']%>','<%=cont['name']%>','<%=cont['description']%>','<%=cont['status']%>')">编辑</a> &nbsp;&nbsp;
+              <a href="javascript:;" onclick="deleteRuleFolder('<%=cont['_id']%>')">删除</a>
+            </td>
+          </tr>
+          <%
+      }
+      %>
+
+            <% } else { %>
+              <tr>
+                <td colspan="7" style="text-align:center;">暂无数据</td>
+              </tr>
+              <% } %>
+    </tbody>
+  </table>
+</div>
+
+<%-common.paging("/rules/groups", "name="+name, totalPage, offset, limit, 5)%>
+
+<div class="ui modal" id="edit_rule_folder">
+  <i class="close icon"></i>
+  <div class="tiny header">
+    编辑规则集
+  </div>
+  <div class="content">
+    <form class="ui form">
+      <div class="field">
+        <label class="required_input">名称</label>
+        <div class="ui left input">
+          <input name="name" type="text" id="rule_name" onKeyup="spec(this);checkLength(this);" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">备注</label>
+        <div class="ui left input">
+          <input name="des" type="text" id="rule_des" onKeyup="spec(this);checkLength(this);" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">状态</label>
+        <div class="ui left input">
+          <select name="folder" class="ui dropdown" id="statusSelect">
+            <option value="1">启用</option>
+            <option value="0">禁用</option>
+          </select>
+        </div>
+      </div>
+    </form>
+    <div class="ui hidden divider"></div>
+  </div>
+  <div class="actions">
+    <div class="ui black deny button">取消</div>
+    <div class="ui positive submit right labeled icon button" onClick="saveRuleFolder()">保存<i class="checkmark icon"></i></div>
+  </div>
+</div>
+
+<script type="text/javascript">
+  $(function(){
+    activeUrl();
+  })
+  var Val = "";
+  $('#statusSelect').dropdown();
+  function search(){
+    location.href=encodeURI("?name="+$("#name").val()+"&limit=<%=limit%>");
+  }
+
+  $("#rule_name").blur(function(){
+    if($(this).parents("#edit_rule_folder").attr("data-id") !== "new" && $(this).val() === Val){
+      return false;
+    }else{
+      distinct(this,'/rules/groups');
+    }
+  });
+
+  function editRuleFolder(order, name, des,status) {
+    Val = name;
+    $('#edit_rule_folder').attr("data-id", order);
+    $('#edit_rule_folder .header').text("修改规则集");
+    $("#rule_name").val(name);
+    $("#rule_des").val(des);
+    $('#statusSelect').dropdown("set selected",status);
+    $('#edit_rule_folder').modal({'autofocus':false,'closable':false,onApprove:function(){return false}}).modal('show');
+  };
+
+  function createRuleFolder() {
+    $('#edit_rule_folder').attr("data-id", "new");
+    $('#edit_rule_folder .header').text("添加规则集");
+    $("#rule_name").val("");
+    $("#rule_des").val("");
+    $('#statusSelect').dropdown("set selected",$('#statusSelect option:first-of-type').val());
+    $('#edit_rule_folder').modal({'autofocus':false,'closable':false,onApprove:function(){return false}}).modal('show');
+  };
+
+  function saveRuleFolder() {
+    var _order = $('#edit_rule_folder').attr("data-id");
+    var _name = $("#rule_name").val();
+    var _des = $("#rule_des").val();
+    var _status = $('#statusSelect').val();
+
+    if (_name == "") {
+      swal("请填写名称!", "", "warning");
+      return false;
+    }
+
+    if (_des == "") {
+      swal("请填写描述!", "", "warning");
+      return false;
+    }
+
+    var action = {};
+    _order === "new" ? action = {title: "添加",type: "post",order: ""} : action = {title: "修改",type: "put",order: "/" + _order};
+    var params = {
+      name: _name,
+      description: _des,
+      status:_status
+    };
+
+    swal({
+        title: "确认" + action.title + "规则集？",
+        text: "",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: action.title,
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          $.ajax({
+              type: action.type,
+              url: "/rules/groups" + action.order,
+            data: params,
+            success: function(data) {
+              swal({
+                  title: action.title + "成功",
+                  text: "",
+                  type: "success",
+                  confirmButtonText: "确定",
+                },
+                function() {
+                  setTimeout(function() {
+                    location.reload();
+                  }, 330);
+                });
+            },
+            error: function() {
+              swal(action.title + "失败，请重试", "", "error");
+            }
+          });
+      }
+    });
+  };
+
+  function deleteRuleFolder(id) {
+    swal({
+        title: "确认删除此规则集？",
+        text: "删除此规则集将同时删除其包含的所有规则与相关规则所包含的词组！",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: "删除",
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          $.ajax({
+            type: "delete",
+            url: "/rules/groups/" + id,
+            success: function(data) {
+              swal({
+                  title: "删除成功",
+                  text: "",
+                  type: "success",
+                  confirmButtonText: "确定",
+                },
+                function() {
+                  setTimeout(function() {
+                    location.reload();
+                  }, 330);
+                });
+            },
+            error: function() {
+              swal("删除失败，请重试", "", "error");
+            }
+          });
+        }
+      });
+  };
+</script>

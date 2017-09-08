@@ -1,0 +1,47 @@
+{
+  "port":5001,
+  "redis":{
+    "host":"192.168.1.110",
+    "port":6379,
+    "connectTimeout": 3000
+  },
+  "elasticsearch":{
+    "host":"192.168.1.210",
+    "port":9200
+  },
+  "mongodb":{
+    "host":"mongodb://192.168.1.202:27017/callcenter",
+    "extra":{
+      "server":{
+        "auto_connect":true,
+        "poolSize":10,
+        "socketOptions" :{
+          "timeOut":1000,
+          "keepAlive": 1
+        }
+      }
+    }
+  },
+ "limit":10,
+ "engine_server":"192.168.1.110",
+ "engine_server_username":"kaishu",
+ "engine_server_password":"Kaishu@123",
+ "upload_voice_path":"/home/voice/",
+ "conver_xml_path":"/home/xml_result/",
+ "domain":"http://localhost:5001",
+ "upload_csv_path":"/home/csv/",
+ "download_voice_files": "/home/kaishu/download.sh",
+ "conver_voice_shell": "/home/thinkit/System_Offline_Linux_tongyong_ty160613net_lstm12_170503/bin/run.sh",
+ "delete_files": "/home/kaishu/delete.sh",
+ "thresholds":[
+   {"code": "speech_rate_slow","value": "语速过慢"},
+   {"code": "speed_fast","value": "语速过快"},
+   {"code": "single_mute_duration","value": "单次静音时长"},
+   {"code": "mute_ratio","value": "静音比"}
+ ],
+ "hotwords":["是","的","您","你","我","了","对","那","吧","哪","啊"],
+ "audio_file_server":"192.168.1.198",
+ "audio_file_server_username":"kaishu",
+ "audio_file_server_password":"Kaishu123"
+
+}

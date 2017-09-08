@@ -1,0 +1,117 @@
+<div class="ui modal" id="qa-result-modal">
+  <i class="close icon"></i>
+  <div class="tiny header">
+    质检结果
+  </div>
+  <div class="content">
+    <h3>工单信息</h3>
+    <div class="ui divider"></div>
+    <div class="ui list">
+      <div class="item">
+        <div class="header">录音流水号</div><span class="input-field"></span></div>
+      <div class="ui hidden divider"></div>
+      <div class="item">
+        <div class="header">通话总时长</div><span class="input-field"></span></div>
+      <div class="ui hidden divider"></div>
+      <div class="item">
+        <div class="header">静音总时长</div><span class="input-field"></span></div>
+      <div class="ui hidden divider"></div>
+      <div class="item">
+        <div class="header">呼叫时间</div><span class="input-field"></span></div>
+    </div>
+    <div class="ui divider"></div>
+    <div class="ui hidden divider"></div>
+    <h3>质检信息</h3>
+    <div class="ui divider"></div>
+    <div class="ui list">
+      <div class="item">
+        <div class="header">质检得分</div><span class="input-field"></span></div>
+      <div class="ui hidden divider"></div>
+      <div class="item">
+        <div class="header">智能得分</div><span class="input-field"></span></div>
+      <div class="ui hidden divider"></div>
+      <div class="item">
+        <div class="header">人工得分</div><span class="input-field"></span></div>
+      <div class="ui hidden divider"></div>
+      <div class="item">
+        <div class="header">附加分</div><span class="input-field"></span></div>
+      <div class="ui hidden divider"></div>
+      <div class="item">
+        <div class="header">人工扣分原因</div><span class="input-field"></span></div>
+      <div class="ui hidden divider"></div>
+      <div class="item">
+        <div class="header">标签</div><span class="input-field"></span></div>
+      <div class="ui hidden divider"></div>
+      <div class="item">
+        <div class="header">标签备注</div><span class="input-field"></span></div>
+      <div class="ui hidden divider"></div>
+      <div class="item">
+        <div class="header">智能质检结果</div><span class="input-field"></span></div>
+      <div class="ui hidden divider"></div>
+      <div class="item">
+        <div class="header">人工质检结果</div><span class="input-field"></span></div>
+      <div class="ui hidden divider"></div>
+      <div class="item">
+        <div class="header">质检人员</div><span class="input-field"></span></div>
+      <div class="ui divider"></div>
+    </div>
+    <div class="ui hidden divider"></div>
+  </div>
+  <div class="actions">
+    <div class="ui tiny positive right button">
+      关闭
+    </div>
+  </div>
+</div>
+
+<script>
+  //查看详情
+function viewQaResult(id,type) {
+  var qaResult = {};
+  console.log(id)
+  $('#qa-result-modal').modal({
+    onShow: function() {
+      $.get("/inspection/" + type + "/" + id, function(data, status) {
+        if (status == "success") {
+          console.log(data);
+          var data = data;
+          var personResult = '';
+          var machineResult = '';
+          if(data.person_result){
+            $.each(JSON.parse(data.person_result), function(idx, item){
+              personResult += (idx+1+'.'+item.deductReason + ' 【 扣分：' + item.deductScore + ' 】 ')
+            })
+          }
+          if(data.machine_result){
+            $.each(data.machine_result, function(idx, item){
+              machineResult += (idx+1+'.'+item.rule_name+ '(' + item.rule_content + ')' + ' 【 扣分：' + item.rule_score + ' 】 ')
+            })
+          }
+          var result = [
+            data.seq,
+            secondToTime(data.call_duration/1000),
+            data.mute_duration/1000 + '秒',
+            moment(data.call_time).format('YYYY-MM-DD HH:mm'),
+            data.score,
+            data.machine_score,
+            data.person_score,
+            data.addtional_score,
+            data.decrease_reason||"暂无",
+            data.label_type||"暂无",
+            data.label_details||"暂无",
+            machineResult||"暂无",
+            personResult||"暂无",
+            data.assign_to||"未分配"
+          ];
+          var fieldsList = $('#qa-result-modal').find('.input-field')
+          $.each(fieldsList, function(idx, item) {
+            $(item).html(result[idx])
+          });
+        } else {
+          alert(data);
+        }
+      })
+    }
+  }).modal('show');
+}
+</script>

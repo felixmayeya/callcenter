@@ -1,0 +1,280 @@
+<style>
+.taskTable td .ui.checkbox {
+  margin-top: 4px;
+}
+
+.ui.steps .step{
+  padding-top:0!important;
+  padding-bottom:0!important;
+}
+</style>
+<div class="ui breadcrumb">
+  <div class="section"><i class="angle right icon"></i>任务分配</div>
+  <div class="divider"> / </div>
+  <div class="active section">任务进度</div>
+</div>
+
+<div class='ui hidden divider'></div>
+<div >
+  <div class="ui form">
+    <div class="fields" style="margin-bottom:0;">
+      <div class="five wide field">
+        <label>呼叫时间：</label>
+        <input type="text" class='datarangeInput' name="daterange" data-from="<%=start_time%>" data-to="<%=end_time%>">
+      </div>
+
+      <div class="three wide field">
+        <label>进度状态：</label>
+        <select class='ui dropdown audioSel' data-searchSel="<%=audio_status%>">
+          <option value="0">全部状态</option>
+          <option value="1">已上传</option>
+          <option value="2">已转换</option>
+          <option value="3">智能已质检</option>
+          <option value="4">人工已质检</option>
+        </select>
+      </div>
+      <div class="three wide field">
+        <label>所属业务：</label>
+        <select name="folder" class="ui dropdown" id="sysSelect" data-sysSearchSel="<%=system%>">
+          <option value="all">全部业务</option>
+          <%
+          for (var i in systemList) {
+            var _threshold = systemList[i];
+            %>
+            <option value="<%=_threshold['_id']%>">
+              <%=_threshold['name']%>
+            </option>
+            <% } %>
+          </select>
+        </div>
+        <div class="two wide field">
+          <label>&nbsp;</label>
+          <button class="ui blue button" onclick="search()"><i class='icon search'></i>查询</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class='ui hidden divider'></div>
+
+  <div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+    <table class='ui small very basic table taskTable'>
+      <thead>
+        <tr>
+          <th>
+            <div class="ui checkbox">
+              <input id="allChecked" type="checkBox">
+              <label></label>
+            </div>
+          </th>
+          <th>序号</th>
+          <th>录音流水号</th>
+          <th>坐席工号</th>
+          <th>来电号码</th>
+          <th>呼叫时间</th>
+          <th>所属业务</th>
+
+          <!-- <th>上传状态</th>
+          <th>语音转换状态</th>
+          <th>智能质检状态</th>
+          <th>人工质检状态</th> -->
+          <th width="900">任务进度</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (rows && rows.length > 0) { %>
+          <%
+          for (var i in rows) {
+            var row = rows[i];
+
+            var upload_status;
+            var conver_status;
+            var auto_inspection_status;
+            var manual_inspection_status;
+
+            var upload;
+            if(row['audio_status']['upload_status']===0){
+              upload_status = '等待上传';
+              upload = 'upload';
+            }else{
+              upload_status = '已上传';
+              upload = 'completed';
+            }
+            var conver;
+            if(row['audio_status']['conver_status']===0){
+              conver_status = '等待转换'
+              conver = 'disabled';
+            }else{
+              conver_status = '已转换'
+              conver = 'completed';
+             }
+             var auto_inspection;
+            if(row['audio_status']['auto_inspection_status']===0){
+              auto_inspection_status = '等待智能质检';
+              auto_inspection = 'disabled';
+            }else{
+              auto_inspection_status = '已智能质检';
+              auto_inspection = 'completed';
+            }
+            var manual_inspection;
+            if(row['audio_status']['manual_inspection_status']===0){
+              manual_inspection_status = '等待人工质检';
+              manual_inspection = 'disabled';
+            }else{
+              manual_inspection_status = '已人工质检';
+              manual_inspection = 'completed';
+             }
+
+            %>
+
+
+            <tr>
+              <td>
+                <div class="ui checkbox">
+                  <input type="checkBox">
+                  <label></label>
+                </div>
+              </td>
+              <td data-id="<%=row['_id']%>">
+                <%=parseInt(offset)+parseInt(i)+1%>
+              </td>
+              <td>
+                <%=row['seq']%>
+              </td>
+              <td>
+                <%=row['sit_number']%>
+              </td>
+               <td>
+                <%=row['customer']['mobile'] %>
+              </td>
+              <td>
+                <%=common.format_date(row['call_time'], 'yyyy-MM-dd hh:mm:ss')%>
+              </td>
+              <td>
+                <%=row['system']%>
+              </td>
+
+              <!-- <td>
+              <%=upload_status%>
+            </td>
+            <td>
+            <%=conver_status%>
+          </td>
+          <td>
+          <%=auto_inspection_status%>
+        </td>
+        <td> style="padding:0 2em;"
+        <%=manual_inspection_status%>
+      </td> -->
+      <td >
+
+        <div class="ui steps">
+          <div class="<%=upload%> step">
+            <i class="upload icon"></i>
+            <div class="content">
+              <div class="description"><%=upload_status%></div>
+            </div>
+          </div>
+          <div class="<%=conver%> step">
+            <i class="translate icon"></i>
+            <div class="content">
+              <div class="description"><%=conver_status%></div>
+             </div>
+          </div>
+          <div class="<%=auto_inspection%> step">
+            <i class="server icon"></i>
+            <div class="content">
+              <div class="description"><%=auto_inspection_status%></div>
+             </div>
+          </div>
+          <div class="<%=manual_inspection%> step">
+            <i class="user icon"></i>
+            <div class="content">
+              <div class="description"><%=manual_inspection_status%></div>
+            </div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <% } %>
+    <% } else { %>
+      <tr>
+        <td colspan="18" style="text-align:center;">暂无数据</td>
+      </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+<div class="ui hidden divider"></div>
+<%-common.paging("/tasks/schedules", "start_time="+start_time+"&end_time="+end_time+"&audio_status="+audio_status+"&system="+system, totalPage, offset, limit, 5)%>
+
+
+
+<script>
+  $(function() {
+    activeUrl();
+  });
+$(".assignSel option").each(function(){
+  if($(this).attr("value")===$(".assignSel").attr("data-searchSel")){
+    $(this).attr("selected",true)
+    $(".assignSel .text").html($(this).html())
+  }
+})
+
+$("#sysSelect option").each(function() {
+  if ($(this).attr("value") === $("#sysSelect").attr("data-sysSearchSel")) {
+    $(this).attr("selected", true)
+    $("#sysSelect .text").html($(this).html())
+  }
+})
+var stTime = $(".datarangeInput").attr('data-from') !== '' ? Number($(".datarangeInput").attr('data-from')) : parseInt(moment().startOf('day').utc().format('x'))
+var edTime = $(".datarangeInput").attr('data-to') !== '' ? Number($(".datarangeInput").attr('data-to')) : parseInt(moment().add(1, "d").startOf('day').utc().format('x'));
+
+$('input[name="daterange"]').val(moment.utc(stTime).format('YYYY-MM-DD HH:mm') + " 至 " + moment.utc(edTime).format('YYYY-MM-DD HH:mm'));
+$(".ui.dropdown").dropdown();
+
+$('input[name="daterange"]').daterangepicker({
+  "startDate": moment.utc(stTime),
+  "endDate": moment.utc(edTime),
+  separator: ' 至 ',
+  maxDate: moment(),
+  timePicker12Hour: false,
+  format: 'YYYY-MM-DD HH:mm',
+  locale: {
+    applyLabel: '确定',
+    cancelLabel: '关闭',
+    customRangeLabel: "自定义日期",
+    daysOfWeek: ["日", "一", "二", "三", "四", "五", "六"],
+    monthNames: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
+  },
+  "timePicker": true,
+  "timePicker24Hour": true
+}, function(start, end, label) {
+  stTime = parseInt(moment(start['_d']).utc().format('x'));
+  edTime = parseInt(moment(end['_d']).utc().format('x'));
+});
+
+$('#startDate').daterangepicker({
+  "singleDatePicker": true,
+  format : 'YYYY-MM-DD',
+  "startDate": moment().startOf('day'),
+  "endDate": moment().add(1, "d").startOf('day'),
+}, function(start, end, label) {
+});
+
+$('#doneDate').daterangepicker({
+  "singleDatePicker": true,
+  format : 'YYYY-MM-DD',
+  "startDate": moment().startOf('day'),
+  "endDate": moment().add(1, "d").startOf('day'),
+}, function(start, end, label) {
+});
+
+
+//搜索
+function search() {
+   var audio_status = parseInt($(".audioSel").find("option:selected").val());
+  var system = $("#sysSelect").find("option:selected").val();
+  location.href = encodeURI("?startTime=" + stTime + "&endTime=" + edTime + "&audio_status=" + audio_status + "&system=" + system);
+}
+</script>

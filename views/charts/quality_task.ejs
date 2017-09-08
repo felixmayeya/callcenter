@@ -1,0 +1,189 @@
+<div class="ui form">
+  <div class="five fields" style="margin-bottom:0;">
+    <div class="field">
+      <label>呼叫时间</label>
+      <input type="text" class='datarangeInput' name="daterange" placeholder="选择时间" data-from="<%= from %>" data-to="<%= to %>">
+    </div>
+    <div class="field">
+      <label>所属业务</label>
+      <select name="system" class="ui fluid dropdown" data-value="<%= system %>">
+        <option value="all">全部业务</option>
+        <%
+          for (var i in systemList) {
+            var _systemList = systemList[i];
+        %>
+        <option value="<%=_systemList['_id']%>"><%=_systemList['name']%></option>
+            <%
+        }
+        %>
+      </select>
+    </div>
+    <div class="field">
+      <label>质检组</label>
+      <select name="qa_group" class="ui fluid dropdown" data-value="<%= qa_group %>" id="qa_group">
+        <option value="all">全部质检组</option>
+        <%
+          for (var i in groupList) {
+            var _groupList = groupList[i];
+        %>
+        <option value="<%=_groupList['_id']%>"><%=_groupList['name']%></option>
+            <%
+        }
+        %>
+      </select>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit button" onclick="search()">
+        <i class="icon search"></i>
+        搜索
+      </div>
+    </div>
+  </div>
+</div>
+<div class='ui hidden divider'></div>
+<div class="ui" style="height: 85%;">
+  <div id="barChart" style="height: 100%;"></div>
+</div>
+<script>
+var from, to;
+  $(function(){
+    activeUrl();
+    initSearchQuery()
+
+    //初始化下拉框
+    $('.ui.dropdown').dropdown();
+
+    //初始化日期
+    initDatePicker()
+  })
+  function search() {
+    if($('.datarangeInput').val()!=="选择时间"){
+      var dateRange = $('.datarangeInput').val().split('至');
+      from = parseInt(moment(dateRange[0].trim()).valueOf());
+      to = parseInt(moment(dateRange[1].trim()).valueOf());
+    }
+
+    location.href = encodeURI("?from=" + from + "&to=" + to + "&qa_group=" + $('select[name="qa_group"]').val() + "&system=" + $('select[name="system"]').val());
+  }
+  //初始化search query
+  function initSearchQuery() {
+    $('select[name="system"]').val($('select[name="system"]').attr('data-value'))
+    $('select[name="qa_group"]').val($('select[name="qa_group"]').attr('data-value'))
+    from = $('input[name="daterange"]').attr('data-from')
+    to = $('input[name="daterange"]').attr('data-to')
+    from = from !== ''?Number(from):'';
+    to = to!==''?Number(to):'';
+    //设定input默认时间
+    if (from !== '' && to !== '') {
+      $('input[name="daterange"]').val(moment(from).format('YYYY-MM-DD HH:mm') + " 至 " + moment(to).format('YYYY-MM-DD HH:mm'));
+    } else {
+      $('input[name="daterange"]').val('选择时间');
+    }
+  }
+  var chartData=<%- JSON.stringify(rows)%>;
+  var xside = <%- JSON.stringify(systenNames)%>;
+  console.log(chartData);
+  console.log(xside);
+  var barChart = echarts.init(document.getElementById('barChart'));
+  var option = {
+    		title: {
+          	text: '质检任务分析',
+      	},
+        toolbox:{
+          right:"2%",
+          feature:{
+            saveAsImage:{
+
+            }
+          }
+        },
+        tooltip : {
+            trigger: 'axis',
+            axisPointer : {            // 坐标轴指示器，坐标轴触发有效
+                type : 'shadow'        // 默认为直线，可选为：'line' | 'shadow'
+            }
+        },
+        legend: {
+            data:xside
+        },
+        grid: {
+            left: '3%',
+            right: '4%',
+            bottom: '3%',
+            containLabel: true
+        },
+        xAxis : [
+            {
+                type : 'category',
+                data : chartData.map(function(item){
+                  return item['date']
+                })
+            }
+        ],
+        yAxis : [
+            {
+              name: "任务数",
+              type : 'value',
+              minInterval: 1
+            }
+        ],
+        series : (function(){
+          var seriesArr = [];
+          for(var i=0;i<xside.length;i++){
+            seriesArr.push({
+                name:xside[i],
+                type:'bar',
+                data:chartData.map(function(item){
+                  if(item['data'][i]){
+                    return item['data'][i].count
+                  }else{
+                    return ''
+                  }
+                })
+            })
+          }
+          return seriesArr;
+        })()
+
+
+
+
+
+        // [
+        //     {
+        //       name:'电话销售中心',
+        //       type:'bar',
+        //       data:chartData.map(function(item){
+        //         return item['data'][0].count
+        //       })
+        //     },
+        //     {
+        //       name:'客服中心',
+        //       type:'bar',
+        //       data:chartData.map(function(item){
+        //         if(item['data'][1]){
+        //           return item['data'][1].count
+        //         }else{
+        //           return 0
+        //         }
+        //       })
+        //     },
+        //     {
+        //       name:'信用卡客服中心',
+        //       type:'bar',
+        //       data:chartData.map(function(item){
+        //         if(item['data'][2]){
+        //           return item['data'][2].count
+        //         }else{
+        //           return 0
+        //         }
+        //       })
+        //     }
+        // ]
+    };
+    barChart.setOption(option);
+    $(window).resize(function(){
+      barChart.resize()
+    });
+</script>

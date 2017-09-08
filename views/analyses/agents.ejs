@@ -1,0 +1,212 @@
+<div class="ui form">
+  <div class="five fields">
+    <%
+    //管理员角色
+    if (session && session.user && (session.user.role == 'admin' || session.user.role == 'manager')) {
+    %>
+    <div class="field">
+    	<label>坐席工号</label>
+      <select name="sitNumber" class="ui fluid search dropdown" data-value="<%= sit_number %>">
+        <option value="all">全部</option>
+        <% if(sitList && sitList.length>0) { %>
+          <%
+            for(i in sitList){
+              item = sitList[i]
+          %>
+            <option value="<%= item._id %>"><%= item.username %></option>
+          <% } %>
+        <% } %>
+      </select>
+    </div>
+    <%
+    }
+    %>
+    <div class="field">
+    	<label>坐席组</label>
+      <input name="sitTeam" type="text" placeholder="输入坐席组" value="<%= sit_team %>">
+    </div>
+    <div class="field">
+      <label>所属业务</label>
+      <select name="system" class="ui fluid dropdown" data-value="<%= system %>">
+        <option value="all">全部业务</option>
+        <% if(systemList && systemList.length>0) { %>
+          <%
+            for(i in systemList){
+              item = systemList[i]
+          %>
+            <option value="<%= item._id %>"><%= item.name %></option>
+          <% } %>
+        <% } %>
+      </select>
+    </div>
+    <div class="field">
+      <label>标签类型</label>
+      <select name="labelType" class="ui fluid dropdown" data-value="<%= label_type %>">
+        <option value="all">全部</option>
+        <option value="male">未质检</option>
+        <option value="female">已质检</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>是否复议</label>
+      <select name="recheckStatus" class="ui fluid dropdown" data-value="<%= recheck_status %>">
+        <option value="all">全部</option>
+        <option value="0">已申请</option>
+        <option value="2">已评审</option>
+        <option value="1">已驳回</option>
+      </select>
+    </div>
+  </div>
+  <div class="five fields">
+    <div class="field">
+      <label>呼叫时间</label>
+      <input type="text" class='datarangeInput' name="daterange" placeholder="选择时间" data-from="<%= from %>" data-to="<%= to %>">
+    </div>
+    <div class="field">
+      <label>得分区间</label>
+      <div class="inline fields">
+        <div class="field eight wide"><input name="startScore" type="number" value="<%= startScore %>"></div>到&nbsp;&nbsp;&nbsp;&nbsp;
+        <div class="field eight wide"><input name="endScore" type="number" value="<%= endScore %>"></div>
+      </div>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit button" onclick="search()">
+        <i class="icon search"></i>
+        搜索
+      </div>
+    </div>
+    <div class="field">
+
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui blue submit right floated button" onclick="downloadCSV()">
+        <i class="icon download"></i>
+        导出
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+  <table class="ui small very basic table">
+    <thead>
+      <tr>
+        <th>序号</th>
+        <th>录音流水号</th>
+        <th>坐席工号</th>
+        <th>坐席组</th>
+        <th>所属业务</th>
+        <th>人工得分</th>
+        <th>智能得分</th>
+        <th>总分</th>
+        <th style="width:320px">人工扣分原因</th>
+        <th>标签类型</th>
+        <th>标签细则</th>
+        <th>来电时间</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if(rows && rows.length>0) { %>
+        <%
+          for(i in rows){
+            row = rows[i]
+        %>
+          <tr>
+            <td><%= Number(offset)+Number(i)+1 %></td>
+            <td><%= row.seq %></td>
+            <td><%= row.sit_number %></td>
+            <td><%= row.sit_team %></td>
+            <td><%= common.get_sys_name(row.system, systemList) %></td>
+            <td><%= row.person_score %></td>
+            <td><%= row.machine_score %></td>
+            <td><%= row.score %></td>
+            <td><%- row.decrease_reason %></td>
+            <td><%- row.label_type %></td>
+            <td><%- row.label_details %></td>
+            <td><%= new Date(row.call_time).format("yyyy-MM-dd hh:mm") %></td>
+          </tr>
+        <% } %>
+      <% } else { %>
+        <tr>
+          <td colspan="17" style="text-align:center;">暂无数据</td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+<%-common.paging("/analyses/agents", "sit_number="+sit_number+"&sit_team="+sit_team+"&system="+system+"&label_type="+label_type+"&recheck_status="+recheck_status+"&startScore="+startScore+"&endScore="+endScore+"&from="+from+"&to="+to, totalPage, offset, limit, 5)%>
+
+<script>
+  var from, to;
+
+	$(function() {
+    activeUrl();
+    //init search query
+    initSearchQuery()
+
+    //初始化下拉框
+    $('.ui.dropdown').dropdown({
+      message: {
+        noResults: "无查询结果"
+      }
+    });
+
+    //初始化daterangepicker
+    initDatePicker();
+  });
+
+  //搜索
+  function search() {
+    var sitNumber = $('select[name="sitNumber').val()
+    var sitTeam = $('input[name="sitTeam').val()
+    var channel = $('input[name="channel').val()
+    var system = $('select[name="system').val()
+    var labelType = $('select[name="labelType').val()
+    var recheckStatus = $('select[name="recheckStatus').val()
+    var startScore = $('input[name="startScore').val()
+    var endScore = $('input[name="endScore').val()
+
+    if($('.datarangeInput').val()!=="选择时间"){
+      var dateRange = $('.datarangeInput').val().split('至');
+      from = parseInt(moment(dateRange[0].trim()).valueOf());
+      to = parseInt(moment(dateRange[1].trim()).valueOf());
+    }
+    location.href=encodeURI("?sit_number="+sitNumber+"&sit_team="+sitTeam+"&system="+system+"&label_type="+labelType+"&recheck_status="+recheckStatus+"&startScore="+startScore+"&endScore="+endScore+"&from="+from+"&to="+to);
+  }
+
+  //下载csv
+  function downloadCSV(){
+    var sitNumber = $('select[name="sitNumber').val()
+    var sitTeam = $('input[name="sitTeam').val()
+    var channel = $('input[name="channel').val()
+    var system = $('select[name="system').val()
+    var labelType = $('select[name="labelType').val()
+    var recheckStatus = $('select[name="recheckStatus').val()
+    var startScore = $('input[name="startScore').val()
+    var endScore = $('input[name="endScore').val()
+
+    var osType = isMac() ? 'mac' : isWindows() ? 'win' : 'linux';
+    location.href = "/analyses/agents/download?os_type="+osType+"&sit_number="+sitNumber+"&sit_team="+sitTeam+"&channel="+channel+"&system="+system+"&label_type="+labelType+"&recheck_status="+recheckStatus+"&startScore="+startScore+"&endScore="+endScore+"&from="+from+"&to="+to + "&limit=" + <%= limit %>
+  }
+
+  //初始化search query
+  function initSearchQuery(){
+    $('select[name="sitNumber"]').val($('select[name="sitNumber"]').attr('data-value'))
+    $('select[name="system"]').val($('select[name="system"]').attr('data-value'))
+    $('select[name="labelType"]').val($('select[name="labelType"]').attr('data-value'))
+    $('select[name="recheckStatus"]').val($('select[name="recheckStatus"]').attr('data-value'))
+
+    from = $('input[name="daterange"]').attr('data-from')
+    to = $('input[name="daterange"]').attr('data-to')
+    from = from !== ''?Number(from):'';
+    to = to!==''?Number(to):'';
+    //设定input默认时间
+    if (from !== '' && to !== '') {
+      $('input[name="daterange"]').val(moment(from).format('YYYY-MM-DD HH:mm') + " 至 " + moment(to).format('YYYY-MM-DD HH:mm'));
+    } else {
+      $('input[name="daterange"]').val('选择时间');
+    }
+  }
+</script>

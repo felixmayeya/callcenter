@@ -1,0 +1,160 @@
+<div class="ui form">
+  <div class="two fields">
+    <div class="field">
+      <h3 class="ui block header">头像更换</h3>
+      <div class="ui image">
+        <img src="/img/user.png" class="ui" id="preview"><br>
+        <input type="file" name="file" onchange="imgPreview(this)" />
+      </div><br>
+      <div class="field">
+        <label>&nbsp;</label>
+        <div class="ui blue submit button" onclick="submitHead()">提交</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <h3 class="ui block header">密码修改</h3>
+      <div class="ui form">
+        <div class="field">
+          <label>新密码</label>
+          <input type="text" id="password1" placeholder="" value="">
+        </div><br>
+        <div class="field">
+          <label>再次输入新密码</label>
+          <input type="text" id="password2" placeholder=""value="">
+        </div><br>
+        <div class="field">
+          <label>&nbsp;</label>
+          <div class="ui blue submit button right floated" onclick="submitNewPass()">提交</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  var headUrl = '';
+  var headImgUrl = localStorage.getItem('AVATAR');
+  if(headImgUrl){
+    $("#preview").attr("src",headImgUrl);
+  }
+
+  function imgPreview(fileDom){
+      //判断是否支持FileReader
+      if (window.FileReader) {
+          var reader = new FileReader();
+      } else {
+          swal("您的设备不支持图片预览功能，如需该功能请升级您的浏览器设备！","","warning");
+      }
+
+      //获取文件
+      var file = fileDom.files[0];
+      var imageType = /^image\//;
+      //是否是图片
+      if (!imageType.test(file.type)) {
+          swal("请选择图片！","","warning");
+          return;
+      }
+      //读取完成
+      reader.readAsDataURL(file);
+      reader.onload = function(e) {
+          //获取图片dom
+          var img = document.getElementById("preview");
+          //图片路径设置为读取的图片
+          img.src = e.target.result;
+          headUrl = reader.result;
+      };
+  }
+
+  function submitHead(){
+    if(headUrl === ''){
+      swal("请先选择图片","","warning");
+      return false;
+    }
+    $.ajax({
+      type: "put",
+      data: {avatar: headUrl},
+      url: "/users/change/avatar/"+localStorage.getItem("USERID"),
+      success: function(data){
+        if(data.code === '20000'){
+          swal({
+              title: data.msg,
+              text: "",
+              type: "success",
+              confirmButtonText: "确定",
+            },
+            function() {
+              $(".imgbox img").attr("src",headUrl);
+              localStorage.setItem('AVATAR',headUrl);
+            });
+        }else{
+          swal({
+              title: data.msg,
+              text: "",
+              type: "error",
+              confirmButtonText: "确定",
+            });
+        }
+      },
+      error: function(){
+        swal({
+            title: "修改失败，请重试",
+            text: "",
+            type: "error",
+            confirmButtonText: "确定",
+          });
+      }
+    })
+  }
+
+  function submitNewPass(){
+    var password1 = $("#password1").val();
+    var password2 = $("#password2").val();
+    if(password1 === '' || password2 === ''){
+      swal("请填写密码","","warning");
+      return false;
+    }
+    if(password1 !== password2){
+      swal("请保持两次密码填写一致","","warning");
+      return false;
+    }
+    console.log(hex_md5(password2));
+    $.ajax({
+      type: "put",
+      data: {password: hex_md5(password2)},
+      url: "/users/change/password/"+localStorage.getItem("USERID"),
+      success: function(data){
+        if(data.code === '20000'){
+          localStorage.setItem("CHANGEPASSWORD",1);
+          swal({
+              title: data.msg,
+              text: "请重新登录",
+              type: "success",
+              confirmButtonText: "确定",
+            },
+            function() {
+              setTimeout(function() {
+                location.href="/logout"
+              }, 330);
+            });
+        }else{
+          swal({
+              title: "修改失败，请重试",
+              text: "",
+              type: "error",
+              confirmButtonText: "确定",
+            });
+        }
+      },
+      error: function(){
+        swal({
+            title: "修改失败，请重试",
+            text: "",
+            type: "error",
+            confirmButtonText: "确定",
+          });
+      }
+    })
+  }
+</script>

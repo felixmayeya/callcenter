@@ -1,0 +1,50 @@
+{
+  "port":5001,
+  "redis":{
+    "host":"10.10.153.27",
+    "port":6379,
+    "connectTimeout": 3000
+  },
+  "mongodb":{
+    "host":"mongodb://10.10.164.185:27017/callcenter,mongodb://10.10.172.48:27017/callcenter?slaveOk=true",
+    "extra":{
+      "replset": {
+        "strategy": "ping",
+        "replicaSet": "udb-lppeft",
+        "auto_reconnect":true,
+        "maxPoolSize":50,
+        "readSecondary": false,
+        "socketOptions" : {
+          "timeOut":10000,
+          "keepAlive" : 1
+        }
+      },
+      "user":"",
+      "pass":"",
+      "db": {"readPreference": "primaryPreferred"},
+      "server":{
+        "readPreference" : "primaryPreferred",
+        "auto_reconnect":true,
+        "maxPoolSize":50,
+        "socketOptions" :{
+          "timeOut":10000,
+          "keepAlive" : 1
+        }
+      }
+    }
+  },
+  "limit":10,
+  "upload_voice_path":"/home/voice/",
+  "conver_xml_path":"/home/xml_result/",
+  "domain":"http://localhost:5001",
+  "upload_csv_path":"/home/csv/",
+  "conver_voice_shell": "sh /home/thinkit/System_Offline_Linux_tongyong_ty160613net_lstm12_170503/bin/run.sh",
+  "thresholds":[
+    {"code": "speech_rate_slow","value": "语速过慢"},
+    {"code": "speed_fast","value": "语速过快"},
+    {"code": "single_mute_duration","value": "单次静音时长"},
+    {"code": "mute_ratio","value": "静音比"}
+  ],
+  "hotwords":["是","的","您","你","我","了","对","那","吧","哪","啊"]
+
+}

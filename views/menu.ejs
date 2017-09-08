@@ -1,0 +1,139 @@
+<div class="ui vertical pointing">
+  <div id="jquery-accordion-menu" class="jquery-accordion-menu red">
+		<ul id="demo-list">
+      <%
+      //管理员角色
+      if (session && session.user && (session.user.role == 'admin' || session.user.role == 'manager')) {
+      %>
+      <li><a href="/"><i class="home icon"></i>首页 </a></li>
+      <li><a href="/search"><i class="search icon"></i>全文搜索 </a></li>
+      <li><a href="javascript:void(0);"><i class="cloud upload icon"></i>数据导入</a>
+        <ul class="submenu">
+          <li><a href="/audios/upload">文件上传</a></li>
+          <li><a href="/audios/upload_config">导入配置 </a></li>
+          <li><a href="/audios">批量导入</a></li>
+        </ul>
+      </li>
+      <li><a href="javascript:void(0);"><i class="tasks icon"></i>任务分配 </a>
+        <ul class="submenu">
+          <li><a href="/tasks">手动分配 </a></li>
+          <li><a href="/tasks/timers">自动分配 </a></li>
+        </ul>
+      </li>
+      <li><a href="javascript:void(0);"><i class="umbrella icon"></i>质检管理 </a>
+        <ul class="submenu">
+          <li><a href="/inspections">质检结果 </a></li>
+          <li><a href="/inspections/reviews">复议审核 </a></li>
+          <li><a href="/analyses/agents">坐席质检统计 </a></li>
+          <li><a href="/analyses/workers">质检员工作统计 </a></li>
+          <li><a href="/audios/distribute">录音学习监督 </a></li>
+        </ul>
+      </li>
+      <li><a href="javascript:void(0);"><i class="bar chart icon"></i>分析报表 </a>
+        <ul class="submenu">
+          <li><a href="/inspections/repoInfo">分析报表-综合得分 </a></li>
+          <li><a href="/charts/quality_task">分析报表-质检任务 </a></li>
+          <li><a href="/report/qa_analysis">分析报表-质检员绩效 </a></li>
+          <li><a href="/charts/illegal_proportion">分析报表-违规占比 </a></li>
+          <li><a href="/charts/quiet_time">分析报表-静音时长 </a></li>
+          <li><a href="/charts/speech_rate">分析报表-平均语速 </a></li>
+          <li><a href="/charts/emotion">分析报表-情绪分析 </a></li>
+          <li><a href="/charts/call_time">分析报表-来电时间 </a></li>
+          <li><a href="/charts/satisfied">分析报表-客户满意度 </a></li>
+          <li><a href="/charts/keywords">分析报表-关键词分类 </a></li>
+          <li><a href="/charts/hotwords">分析报表-热词云图 </a></li>
+        </ul>
+      </li>
+      <li><a href="javascript:void(0);"><i class="legal icon"></i>规则管理 </a>
+        <ul class="submenu">
+          <li><a href="/rules/groups">质检规则集 </a></li>
+          <li><a href="/rules">智能质检规则 </a></li>
+          <li><a href="/rules/manual/type">人工质检规则分类 </a></li>
+          <li><a href="/rules/manual/reason">质检评分原因 </a></li>
+          <li><a href="/rules/scores">评分规则 </a></li>
+        </ul>
+      </li>
+      <li><a href="javascript:void(0);"><i class="settings icon"></i>系统设置 </a>
+        <ul class="submenu">
+          <li><a href="/systems">业务系统 </a></li>
+          <li><a href="/rules/phrases">规则词组 </a></li>
+          <li><a href="/rules/tricks">标准话术 </a></li>
+          <li><a href="/keywords/types">关键词分类 </a></li>
+          <li><a href="/rules/keywords">关键词 </a></li>
+          <li><a href="/rules/thresholds">阈值设置 </a></li>
+          <li><a href="/mute/types">静音类型 </a></li>
+          <li><a href="/speed/types">语速类型 </a></li>
+        </ul>
+      </li>
+      <li><a href="javascript:void(0);"><i class="user icon"></i>用户管理 </a>
+        <ul class="submenu">
+          <!-- <li><a href="/notices">消息通知 </a></li> -->
+          <li><a href="/users/groups">业务组 </a></li>
+          <li><a href="/users">用户 </a></li>
+          <li><a href="/users/roles">角色 </a></li>
+          <!-- <li><a href="javascript:void(0);" onclick="logout()">退出 </a></li> -->
+        </ul>
+      </li>
+      <%
+      }
+      %>
+
+      <%
+      //质检员角色
+      if (session && session.user && session.user.role == 'worker') {
+      %>
+      <li><a href="javascript:void(0);"><i class="umbrella icon"></i>录音质检 </a>
+        <ul class="submenu">
+          <li><a href="/inspect/<%= session.user._id %>">录音质检 </a></li>
+          <li><a href="/analyses/workers">质检员工作统计 </a></li>
+        </ul>
+      </li>
+      <%
+      }
+      %>
+
+      <%
+      //座席角色
+      if (session && session.user && session.user.role == 'omni') {
+      %>
+      <li><a href="javascript:void(0);"><i class="umbrella icon"></i>质检管理 </a>
+        <ul class="submenu">
+          <li><a href="/inspections/sit/<%= session.user.sit_number %>">质检结果 </a></li>
+          <li><a href="/audios/study">录音学习 </a></li>
+          <li><a href="/analyses/agents">坐席质检统计 </a></li>
+
+        </ul>
+      </li>
+      <%
+      }
+      %>
+
+      <%
+      //质检组长角色
+      if (session && session.user && session.user.role == 'chargeman') {
+      %>
+      <li><a href="javascript:void(0);"><i class="umbrella icon"></i>录音质检 </a>
+        <ul class="submenu">
+          <li><a href="/inspect/<%= session.user._id %>">录音质检 </a></li>
+        </ul>
+      </li>
+      <li><a href="javascript:void(0);"><i class="tasks icon"></i>任务分配 </a>
+        <ul class="submenu">
+          <li><a href="/tasks">手动分配 </a></li>
+        </ul>
+      </li>
+      <li><a href="javascript:void(0);"><i class="umbrella icon"></i>质检管理 </a>
+        <ul class="submenu">
+          <li><a href="/inspections">质检结果 </a></li>
+          <li><a href="/analyses/agents">坐席质检统计 </a></li>
+          <li><a href="/analyses/workers">质检员工作统计 </a></li>
+        </ul>
+      </li>
+      <%
+      }
+      %>
+
+    </ul>
+  </div>
+
+</div>

@@ -1,0 +1,367 @@
+<style>
+  #study{
+    width:300px;
+    margin-left: -150px;
+  }
+  #study form{
+    max-height: 500px;
+    overflow: auto;
+  }
+</style>
+
+<div class="ui form">
+  <div class="four fields">
+    <div class="field">
+      <label>呼叫时间</label>
+      <input type="text" class='datarangeInput' name="daterange" placeholder="选择时间" data-from="<%= from %>" data-to="<%= to %>">
+    </div>
+    <div class="field">
+      <label>质检状态</label>
+      <select name="qaStatus" class="ui fluid dropdown" data-value="<%= qaStatus %>">
+        <option value="all">全部</option>
+        <option value="0">未质检</option>
+        <option value="1">已质检</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>坐席</label>
+      <select name="sit_number" class="ui fluid dropdown" data-value="<%= sit_number %>" id="sit_number">
+        <option value="all">全部坐席</option>
+        <%
+          for (var i in sitList) {
+            var _sitList = sitList[i];
+        %>
+        <option value="<%=_sitList['sit_number']%>"><%=_sitList['username']%></option>
+            <%
+        }
+        %>
+      </select>
+    </div>
+    <div class="field">
+      <label>质检员</label>
+      <select name="assign_to" class="ui fluid dropdown" data-value="<%= assign_to %>" id="assign_to">
+        <option value="all">全部质检员</option>
+        <%
+          for (var i in workerList) {
+            var _workerList = workerList[i];
+        %>
+        <option value="<%=_workerList['_id']%>"><%=_workerList['username']%></option>
+            <%
+        }
+        %>
+      </select>
+    </div>
+    <!-- <div class="field">
+      <label>所属业务</label>
+      <select name="qaStatus" class="ui fluid dropdown" data-value="<%= qaStatus %>">
+        <option value="all">全部</option>
+        <option value="0">未质检</option>
+        <option value="1">已质检</option>
+      </select>
+    </div> -->
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit button" onclick="search()">
+        <i class="icon search"></i>
+        搜索
+      </div>
+    </div>
+  </div>
+  <div class="clearfix">
+    <div class="ui blue submit button" onclick="downloadCSV()">
+      <i class="icon download"></i>导出
+    </div>
+    <div class="ui blue submit button" onclick="markAsStudy()">分配学习任务</div>
+  </div>
+</div>
+
+<div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+  <table class="ui small very basic table insTable">
+    <thead>
+      <tr>
+        <th>
+          <div class="ui checkbox">
+            <input id="allChecked" type="checkBox">
+            <label></label>
+          </div>
+        </th>
+        <th>序号</th>
+        <th>质检状态</th>
+        <th>录音流水号</th>
+        <th>呼叫时间</th>
+        <th>所属业务</th>
+        <th>客户名称</th>
+        <th>话后总结</th>
+        <th>满意度评价</th>
+        <th>通话总时长</th>
+        <th>静音比</th>
+        <th>用户语速</th>
+        <th>坐席语速</th>
+        <th>静音总时长</th>
+        <th>复议状态</th>
+        <th style="width:120px;">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if(rows && rows.length>0) { %>
+        <%
+          for(i in rows){
+            row = rows[i]
+        %>
+          <tr data-id="<%=row['_id']%>" data-status="<%=row['audio_status'].manual_inspection_status%>">
+            <td>
+              <div class="ui checkbox">
+                <input type="checkBox">
+                <label></label>
+              </div>
+            </td>
+            <td><%= Number(offset)+Number(i)+1 %></td>
+            <td>
+              <%
+                if(row['audio_status'].manual_inspection_status ===0) {
+                  inspectionStatus = '未质检'
+              %>
+                <div class="ui tiny red label"><%= inspectionStatus %></div>
+              <%
+                } else {
+                  inspectionStatus = '已质检'
+              %>
+                <div class="ui tiny blue label"><%= inspectionStatus %></div>
+              <% } %>
+            </td>
+            <td><%= row.seq %></td>
+            <td><%= new Date(row.call_time).format("yyyy-MM-dd hh:mm") %></td>
+            <td><%= common.get_sys_name(row.system, systemList) %></td>
+            <td><%= row.customer.name %></td>
+            <td><%= row.end_comment %></td>
+            <td><%= row.satisfy_comment %></td>
+            <td><%= common.secondToTime(row.call_duration/1000) %></td>
+            <td><%= row.mute_ratio %></td>
+            <td><%= row.customer_speed %></td>
+            <td><%= row.agent_speed %></td>
+            <td><%= row.mute_duration/1000 %>秒</td>
+            <td><%= common.getRecheckStatus(row.recheck_status) %></td>
+            <td style="width:120px;">
+              <a href="javascript:;" onclick="showAudio('<%= row._id %>','play')">播放</a>&nbsp;&nbsp;
+              <%
+                if(row['audio_status'].manual_inspection_status ===1) {
+              %>
+              <a href="javascript:;" onclick="viewQaResult('<%= row._id %>','play')">查看结果</a>&nbsp;&nbsp;
+              <% } %>
+            </td>
+          </tr>
+        <% } %>
+      <% } else { %>
+        <tr>
+          <td colspan="20" style="text-align:center;">暂无数据</td>
+        </tr>
+      <% } %>
+
+    </tbody>
+  </table>
+</div>
+
+<%-common.paging("/inspections", "qa_status="+qaStatus+"&from="+from+"&to="+to+"&sit_number=" + sit_number + "&assign_to=" + assign_to, totalPage, offset, limit, 5)%>
+
+<% include inspection_result_modal %>
+<% include audio_play_modal %>
+<div class="ui modal" id="study">
+  <i class="close icon"></i>
+  <div class="tiny header">
+    分配学习任务
+  </div>
+  <div class="content">
+    <form class="ui form">
+      <table class="ui compact celled table nameTble">
+        <thead>
+          <tr>
+            <th>
+              <div class="ui checkbox">
+                <input id="allCheck" type="checkBox">
+                <label></label>
+              </div>
+            </th>
+            <th>坐席</th>
+          </tr>
+        </thead>
+        <tbody>
+          <%
+            for (var i in sitList) {
+              var _sitList = sitList[i];
+          %>
+          <tr data-id="<%= _sitList['_id']%>">
+            <td class="collapsing">
+              <div class="ui checkbox">
+                <input type="checkBox">
+                <label></label>
+              </div>
+            </td>
+            <td><%= _sitList['username']%></td>
+          </tr>
+              <%
+          }
+          %>
+
+        </tbody>
+      </table>
+    </form>
+  </div>
+  <div class="actions">
+    <div class="ui black deny button">取消</div>
+    <div class="ui positive submit right labeled icon button" onClick="saveStudyList()">保存<i class="checkmark icon"></i></div>
+  </div>
+</div>
+
+<script>
+  var from, to;
+  var audiosList = [];
+  $(function() {
+    activeUrl();
+    //init search query
+    initSearchQuery()
+
+    //初始化下拉框
+    $('.ui.dropdown').dropdown();
+
+    //初始化日期
+    initDatePicker()
+  });
+
+  //搜索
+  function search() {
+    var qaStatus = $('select[name="qaStatus"]').val()
+    if($('.datarangeInput').val()!=="选择时间"){
+      var dateRange = $('.datarangeInput').val().split('至');
+      from = parseInt(moment(dateRange[0].trim()).valueOf());
+      to = parseInt(moment(dateRange[1].trim()).valueOf());
+    }
+
+    location.href = encodeURI("?from=" + from + "&to=" + to + "&qa_status=" + qaStatus + "&sit_number=" + $("#sit_number").val() + "&assign_to=" + $("#assign_to").val() + "&limit=" + <%= limit %>);
+  }
+
+  //download csv
+  function downloadCSV() {
+    var osType = isMac() ? 'mac' : isWindows() ? 'win' : 'linux';
+    var qaStatus = $('select[name="qaStatus').val()
+    location.href = "/inspections/download?os_type="+osType+"&qa_status="+qaStatus+"&from="+from+"&to="+to + "&sit_number=" + $("#sit_number").val() + "&assign_to=" + $("#assign_to").val()
+  }
+
+  //初始化search query
+  function initSearchQuery() {
+    $('select[name="qaStatus"]').val($('select[name="qaStatus"]').attr('data-value'))
+    $('select[name="sit_number"]').val($('select[name="sit_number"]').attr('data-value'))
+    $('select[name="assign_to"]').val($('select[name="assign_to"]').attr('data-value'))
+    // console.log($('input[name="daterange"]').data('from'))
+    from = $('input[name="daterange"]').attr('data-from')
+    to = $('input[name="daterange"]').attr('data-to')
+    from = from !== ''?Number(from):'';
+    to = to!==''?Number(to):'';
+    //设定input默认时间
+    if (from !== '' && to !== '') {
+      $('input[name="daterange"]').val(moment(from).format('YYYY-MM-DD HH:mm') + " 至 " + moment(to).format('YYYY-MM-DD HH:mm'));
+    } else {
+      $('input[name="daterange"]').val('选择时间');
+    }
+  }
+
+  //table全选全不选
+  $('.nameTble').delegate("input", "change", function() {
+    if ($('.nameTble input:checked').length === $('.nameTble input').length) {
+      $("#allCheck").prop("checked", true);
+    } else {
+      $("#allCheck").prop("checked", false);
+    }
+  });
+  $("#allCheck").click(function() {
+    if ($(this).prop("checked") === true) {
+      $('.nameTble input').prop("checked", true);
+    } else {
+      $('.nameTble input').prop("checked", false);
+    }
+  });
+
+  $('.insTable').delegate("input", "change", function() {
+    if ($('.insTable input:checked').length === $('.insTable input').length) {
+      $("#allChecked").prop("checked", true);
+    } else {
+      $("#allChecked").prop("checked", false);
+    }
+  });
+  $("#allChecked").click(function() {
+    if ($(this).prop("checked") === true) {
+      $('.insTable input').prop("checked", true);
+    } else {
+      $('.insTable input').prop("checked", false);
+    }
+  });
+
+  //分配学习任务
+  function markAsStudy(){
+    if ($('.insTable input:checked').length === 0) {
+      swal("请先选择一个项目","","warning")
+      return false;
+    }
+    var flag = 0;
+    $('.insTable tbody input:checked').each(function(){
+      if($(this).parents("tr").attr("data-status") === "0"){
+        swal("请勿选择未质检的数据","未质检数据不能被指定为学习的录音数据","warning")
+        $('.insTable input:checked').prop("checked",false);
+        audiosList = [];
+        flag = 1;
+        return false;
+      }else {
+        audiosList.push($(this).parents("tr").attr("data-id"));
+      }
+    });
+    if(flag === 0){
+      $('#study').modal({'autofocus':false,'closable':false,onApprove:function(){return false}}).modal('show');
+    }
+  }
+
+  function saveStudyList(){
+    if ($('.nameTble input:checked').length === 0) {
+      swal("请选择坐席","","warning")
+      return false;
+    }
+    var sitIds = [];
+    $('.nameTble tbody input:checked').each(function(){
+      sitIds.push($(this).parents("tr").attr("data-id"));
+    });
+    var _data = {
+      audios: audiosList,
+      students: sitIds
+    }
+    $.ajax({
+      type: "post",
+      url: "/audios/distribute",
+      dataType: 'json',
+      contentType : "application/json",
+      data:JSON.stringify(_data),
+      success: function(data) {
+        if (data.code === '20000') {
+          swal({
+              title: data.msg,
+              text: "",
+              type: "success",
+              confirmButtonText: "确定",
+            }, function() {
+              setTimeout(function() {
+                location.reload();
+              }, 330);
+            });
+        }else{
+          swal({
+              title: data.msg,
+              text: "",
+              type: "error",
+              confirmButtonText: "确定",
+            });
+        }
+      },
+      error: function() {
+        swal("操作失败请重试", "", "error")
+      }
+    });
+  }
+
+</script>

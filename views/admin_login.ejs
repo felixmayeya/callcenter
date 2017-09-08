@@ -1,0 +1,58 @@
+<div class="ui four column centered grid" style="margin-top:100px;">
+  <div class="column">
+    <h2 class="ui center aligned icon header">
+      管理员登录
+    </h2>
+    <div class="ui hidden divider"></div>
+    <form class="ui form" id="form_user_login">
+      <div class="field">
+        <label>用户名</label>
+        <div class="ui left icon input">
+          <input type="text" id="username" placeholder="请输入用户名...">
+          <i class="user icon"></i>
+        </div>
+      </div>
+      <div class="field">
+        <label>密码</label>
+        <div class="ui left icon input">
+          <input type="password" id="password" placeholder="请输入密码...">
+          <i class="lock icon"></i>
+        </div>
+      </div>
+      <div class="field">
+        <label></label>
+        <div class="ui left icon input">
+          <button class="ui blue button" type="button" onclick="login();">登录</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script type="text/javascript">
+    $(function () {
+        setEnterKey("#password");
+    });
+
+    function login(){
+        var username = $("#username", "#form_user_login").val();
+        var password = $("#password", "#form_user_login").val();
+        var verify_code = $("#verify_code").val();
+
+        $.ajax({
+            type: 'post',
+            url: "/admin/login",
+            data: {username:username, password:hex_md5(password)},
+            success: function(data, status) {
+              if (status == 'success') {
+                  location.href="/systems/";
+              } else {
+                  alert('登录失败');
+              }
+            },
+            error: function() {
+              alert('登录失败');
+            }
+        });
+    }
+</script>

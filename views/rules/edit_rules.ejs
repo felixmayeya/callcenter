@@ -1,0 +1,554 @@
+<style>
+  .containerbox{
+    position: relative;
+    width: 100%;
+    height: 85vh;
+  }
+  .steps{
+    position: absolute;
+    top:0;
+    left: 0;
+  }
+  .contbox{
+    width: 100%;
+    height: 100%;
+    padding:70px 0 50px 0;
+    box-sizing: border-box;
+    margin-top: 15px;
+  }
+  .contbox>.cont{
+    width: 100%;
+    height: 100%;
+    display: none;
+  }
+  .contbox>.cont:nth-of-type(1){
+    display: block;
+  }
+  .btnbox{
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 50px;
+    text-align: center;
+  }
+  .contbox>.cont:nth-of-type(1)>div,.contbox>.cont:nth-of-type(3)>div{
+    width: 50%;
+    margin:50px auto!important;
+  }
+  .btnb{
+    height:30px;
+  }
+  .listbox{
+    margin:0!important;
+    height: 200px!important;
+    overflow: auto!important;
+  }
+  .listbox>.item{
+    padding-left: 20px!important;
+    line-height: 25px!important;
+  }
+  #edit_phrase {
+    width: 600px;
+    margin-left: -300px;
+  }
+
+  .inputbox {
+    line-height: 30px;
+    margin: 15px 0;
+  }
+
+  .inputbox input {
+    width:400px;
+  }
+
+  .phrase_label {
+    width:80px;
+    margin-right: 20px;
+    text-align: right;
+    line-height: 38px;
+  }
+</style>
+
+<div class="containerbox">
+  <div class="ui top attached steps">
+    <div class="active step">
+      <i class="truck icon"></i>
+      <div class="content">
+        <div class="title">基本信息</div>
+        <!-- <div class="description">Choose your shipping options</div> -->
+      </div>
+    </div>
+    <div class="step">
+      <i class="payment icon"></i>
+      <div class="content">
+        <div class="title">词组信息</div>
+      </div>
+    </div>
+    <div class="step">
+      <i class="info icon"></i>
+      <div class="content">
+        <div class="title">规则逻辑</div>
+      </div>
+    </div>
+  </div>
+  <div class="contbox">
+    <div class="cont">
+      <div class="ui sizer vertical segment">
+        <form class="ui form segment" data-op="<%=rules%>">
+            <div class="field">
+              <label class="required_input">名称</label>
+              <input placeholder="请输入规则名称" name="name" onKeyup="spec(this);checkLength(this);" type="text" id="rule_name" data-value="<%=rules['name']%>" value="<%=rules['name']%>" >
+            </div>
+            <div class="field">
+              <label class="required_input">所属规则集</label>
+              <select class="ui dropdown" name="gender" id="rule_group" data-value="<%=rules['rule_group']%>">
+                <%
+                  for (var i in ruleGroups) {
+                    var cont = ruleGroups[i];
+                %>
+                <option value="<%=cont['_id']%>"><%=cont['name']%></option>
+                    <%
+                }
+                %>
+              </select>
+            </div>
+            <div class="field">
+              <label class="required_input">状态</label>
+              <select name="" class="ui dropdown" id="rule_status" data-value="<%=rules['status']%>">
+                <option value="1">启用</option>
+                <option value="0">禁用</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>扣分原因</label>
+              <textarea name="" rows="8" cols="80" placeholder="请输入扣分原因" id="rule_rek" onKeyup="checkLength(this);"><%=rules['remarks']%></textarea>
+            </div>
+          <div class="ui error message"></div>
+        </form>
+      </div>
+    </div>
+    <div class="cont">
+      <div class="ui sizer vertical segment clearfix">
+        <div class="btnb">
+          <button class="ui blue small button right floated" onclick="createPhrase();">
+            <i class="icon write"></i>
+            添加词组
+          </button>
+        </div>
+        <div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+          <table class="ui small very basic table">
+            <thead>
+              <tr>
+                <th>序号</th>
+                <th>词组名称</th>
+                <th>状态</th>
+                <th width="300">内容</th>
+                <th>创建时间</th>
+                <th width="100"></th>
+              </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="cont">
+      <div class="ui sizer vertical segment">
+        <div class="ui form segment">
+          <div class="fluid">
+            <label style="display: block;margin: 0 0 .28571429rem 0;color: rgba(51,51,51,.87);font-size: .92857143em;font-weight: 700;text-transform: none;">规则逻辑</label>
+            <input type="text" id="tabken" readonly>
+            <button class="ui icon button inputbtn" id="csure" style="display:none;">
+              <i class="blue checkmark icon"></i>
+            </button>
+            <button class="ui icon button inputbtn" id="creset" style="display:none;">
+              <i class="red remove icon"></i>
+            </button>
+          </div>
+          <div class="two fields">
+            <div class="field">
+              <label>选择词组与逻辑符</label>
+              <select name="" id="lj1" class="ui dropdown lj">
+                <option value=""></option>
+              </select>
+            </div>
+            <div class="field">
+              <label>&nbsp;</label>
+              <select name="" id="" class="ui dropdown lj">
+                <option value=""></option>
+                <option value="!">!</option>
+                <option value="&&">&&</option>
+                <option value="||">||</option>
+              </select>
+            </div>
+          </div>
+          <div class="field ">
+            <label>组合结果</label>
+            <div class="ui bulleted list listbox segment">
+              <div class="item">
+                <%=rules['content']%>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="btnbox">
+    <div class="ui buttons">
+      <button class="ui yellow button" id="lastStep" disabled>上一步</button>
+      <div class="or"></div>
+      <button class="ui positive button" id="nextStep">下一步</button>
+    </div>
+  </div>
+</div>
+<div class="ui modal" id="edit_phrase">
+  <i class="close icon"></i>
+  <div class="header">
+    编辑词组
+  </div>
+  <div class="content">
+    <div class="description">
+      <div class="ui input inputbox">
+        <span class="phrase_label required_input">名称</span><input type="text" onKeyup="spec(this);checkLength(this);" id="phrase_name" >
+      </div><br/>
+      <div class="ui input inputbox">
+        <span class="phrase_label required_input">内容</span><input type="text" onKeyup="spec(this);checkLength(this);" id="phrase_des" >
+      </div><br/>
+      <div class="ui input inputbox">
+        <span class="phrase_label">状态</span>
+        <select name="folder" class="ui dropdown" id="statusSelect">
+          <option value="1">启用</option>
+          <option value="0">禁用</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="ui black deny button">取消</div>
+    <div class="ui positive right labeled icon button" onclick="savePhrase()">保存<i class="checkmark icon"></i>
+    </div>
+  </div>
+</div>
+<script>
+  $(function(){
+    $("#demo-list a").each(function(){
+      if($(this).attr("href") === "/rules"){
+        $(this).parents("ul").show();
+        $(this).parents("li").addClass("activeMenu");
+        $(this).parents("ul").siblings("a").addClass("submenu-indicator-minus");
+      }
+    })
+  })
+  var ruleId = window.location.pathname.split("/")[3];
+
+
+  $(".dropdown").dropdown();
+  $("#rule_group").dropdown("set selected",$("#rule_group").attr("data-value"));
+  $("#rule_status").dropdown("set selected",$("#rule_status").attr("data-value"));
+
+  $("#rule_name").blur(function(){
+    if($(this).val() === $(this).attr("data-value") || $(this).val() === ""){
+      return false;
+    }else{
+      distinct(this,'/rules');
+    }
+  });
+
+  var format_date = function(time, fmt){
+    if(time == null || time == ''){
+      return "";
+    }
+
+    var dt = new Date(time);
+    var o = {
+      "M+" : dt.getMonth()+1,                 //月份
+      "d+" : dt.getDate(),                    //日
+      "h+" : dt.getHours(),                   //小时
+      "m+" : dt.getMinutes(),                 //分
+      "s+" : dt.getSeconds(),                 //秒
+      "q+" : Math.floor((dt.getMonth()+3)/3), //季度
+      "S"  : dt.getMilliseconds()             //毫秒
+    };
+    if(/(y+)/.test(fmt))
+      fmt=fmt.replace(RegExp.$1, (dt.getFullYear()+"").substr(4 - RegExp.$1.length));
+    for(var k in o)
+      if(new RegExp("("+ k +")").test(fmt))
+    fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));
+    return fmt;
+  };
+
+  function changeStep(index){
+    $("#lastStep").prop("disabled",false);
+    $(".step.active").addClass("completed");
+    $(".steps>.step").removeClass("active");
+    $(".contbox>.cont").hide();
+    $(".steps>.step:nth-of-type("+ (index + 2) +")").addClass("active");
+    $(".contbox>.cont:nth-of-type("+ (index + 2) +")").fadeIn(350);
+  };
+
+  function getTable(){
+    if(ruleId === ""){
+      return false;
+    };
+    $.ajax({
+      type:"get",
+      url:"/rules/phrases/category/rule/"+ ruleId,
+      success:function(data){
+        if(data.conts.length == 0){
+          $("table>tbody").html('<tr><td colspan="6" style="text-align:center;">暂无数据</td></tr>');
+        }else{
+          var sta = ["禁用","启用"];
+          var _cont = "";
+          for(var i = 0;i<data.conts.length;i++){
+            _cont += "<tr data-id='"+ data.conts[i]._id +"'>\
+              <td>"+ Number(i + 1) +"</td>\
+              <td>"+ data.conts[i].name +"</td>\
+              <td data-id='"+ data.conts[i].status +"'>"+ sta[data.conts[i].status] +"</td>\
+              <td>"+ data.conts[i].content +"</td>\
+              <td>"+ format_date(data.conts[i].created, 'yyyy-MM-dd hh:mm:ss') +"</td>\
+              <td><a href='javascript:;' class='editPhrase'>编辑</a> &nbsp;&nbsp;\
+              <a href='javascript:;' class='deletePhrase'>删除</a></td>\
+            </tr>";
+          }
+          $("table>tbody").html(_cont);
+        }
+      }
+    });
+  };
+
+  $("#nextStep").on("click",function() {
+    var index = $(".step.active").index();
+    if(index === 0){
+      var _name = $("#rule_name").val();
+      var _status = $('#rule_status').val();
+      var _rek = $("#rule_rek").val();
+      var _fol = $("#rule_group").val();
+
+      if (_name == "") {
+        swal("请填写名称!", "", "warning");
+        return false;
+      }
+
+      var params = {
+        name: _name,
+        remarks: _rek,
+        status: _status,
+        rule_group: _fol
+      }
+
+      $.ajax({
+        type:"put",
+        url:"/rules/"+ruleId,
+        data:params,
+        success:function(data){
+          changeStep(0);
+          getTable();
+        }
+      })
+
+    }else if(index === 1){
+      changeStep(1);
+      $(this).text("完 成");
+      $.ajax({
+        type:"get",
+        url:"/rules/phrases/category/all/"+ ruleId,
+        success:function(data){
+          var _cont = "<option value=''></option>";
+          for(var i = 0;i<data.conts.length;i++){
+            _cont += "<option value='"+ data.conts[i].content +"'>"+ data.conts[i].content +"</option>";
+          }
+          $("#lj1").html(_cont);
+        }
+      })
+
+    }else{
+      $.ajax({
+        type:"put",
+        url:"/rules/"+ ruleId,
+        data:{
+          content: $(".listbox>.item").text()
+        },
+        success:function(data){
+          console.log(data);
+          swal({
+              title: "添加成功",
+              text: "",
+              type: "success",
+              confirmButtonText: "确定",
+            },
+            function() {
+              setTimeout(function() {
+                location.href = "/rules";
+              }, 330);
+            });
+        }
+      })
+    }
+  });
+
+  $("#lastStep").on("click",function() {
+    var index = $(".step.active").index();
+    $("#nextStep").html("下一步");
+    $(".steps>.step").removeClass("active");
+    $(".contbox>.cont").hide();
+    $(".steps>.step:nth-of-type("+ index +")").removeClass("completed").addClass("active");
+    $(".contbox>.cont:nth-of-type("+ index +")").fadeIn(350);
+    if(index === 1){
+      $(this).prop("disabled",true);
+    }
+  });
+
+  $(".lj").dropdown({
+    onChange: function(value) {
+      var _val = $("#tabken").val();
+      if(_val === ""){
+        $("#tabken").width($("#tabken").width() - 94);
+      }
+      $("#tabken").val(_val + value);
+      $(".inputbtn").show();
+    }
+  });
+
+  $("#creset").on("click",function(){
+    $("#tabken").val("");
+    $(".lj").dropdown("clear");
+    $(".inputbtn").hide();
+    $("#tabken").css("width","100%");
+  });
+
+  $("#csure").on("click",function(){
+    $(".listbox").html("<div class='item'>"+ $("#tabken").val() +"</div>");
+    $("#tabken").val("");
+    $(".lj").dropdown("clear");
+    $(".inputbtn").hide();
+    $("#tabken").css("width","100%");
+  });
+
+  $("table").delegate('.editPhrase',"click",function() {
+    var order = $(this).parents("tr").attr("data-id");
+    var name = $(this).parents("tr").children("td").eq(1).text();
+    var des = $(this).parents("tr").children("td").eq(3).text();
+    var fol = $(this).parents("tr").children("td").eq(2).attr("data-id");
+    $('#edit_phrase').attr("data-id", order);
+    $('#edit_phrase .header').text("修改词组");
+    $("#phrase_name").val(name);
+    $("#phrase_des").val(des);
+    $('#statusSelect').dropdown("set selected",fol);
+    $('#edit_phrase').modal({'autofocus':false}).modal('show');
+  });
+
+  function createPhrase () {
+    $('#edit_phrase').attr("data-id", "new");
+    $('#edit_phrase .header').text("添加词组");
+    $("#phrase_name").val("");
+    $("#phrase_des").val("");
+    $('#statusSelect').dropdown("set selected",$('#statusSelect option:first-of-type').val());
+    $('#edit_phrase').modal({'autofocus':false}).modal('show');
+  };
+
+  function savePhrase() {
+    var _order = $('#edit_phrase').attr("data-id");
+    var _name = $("#phrase_name").val();
+    var _des = $("#phrase_des").val();
+    var _status = $('#statusSelect').val();
+
+    if (_name == "") {
+      swal("请填写名称!", "", "warning");
+      return false;
+    }
+
+    if (_des == "") {
+      swal("请填写内容!", "", "warning");
+      return false;
+    }
+
+    var action = {};
+    _order === "new" ? action = {title: "添加",type: "post",order: ""} : action = {title: "修改",type: "put",order: "/" + _order};
+    var params = {
+      rule: ruleId,
+      name: _name,
+      content: _des,
+      status: _status
+    };
+
+    swal({
+        title: "确认" + action.title + "词组？",
+        text: "",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: action.title,
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          $.ajax({
+              type: action.type,
+              url: "/rules/phrases" + action.order,
+            data: params,
+            success: function(data) {
+              swal({
+                  title: action.title + "成功",
+                  text: "",
+                  type: "success",
+                  confirmButtonText: "确定",
+                },
+                function() {
+                  setTimeout(function() {
+                    getTable();
+                  }, 330);
+                });
+            },
+            error: function() {
+              swal(action.title + "失败，请重试", "", "error");
+            }
+          });
+      }
+    });
+  };
+
+  $("table").delegate('.deletePhrase',"click",function() {
+    var id = $(this).parents("tr").attr("data-id");
+    swal({
+        title: "确认删除此词组？",
+        text: "",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: "删除",
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          $.ajax({
+            type: "delete",
+            url: "/rules/phrases/" + id,
+            success: function(data) {
+              swal({
+                  title: "删除成功",
+                  text: "",
+                  type: "success",
+                  confirmButtonText: "确定",
+                },
+                function() {
+                  setTimeout(function() {
+                    getTable();
+                  }, 330);
+                });
+            },
+            error: function() {
+              swal("删除失败，请重试", "", "error");
+            }
+          });
+        }
+      });
+  });
+</script>

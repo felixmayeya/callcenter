@@ -1,0 +1,311 @@
+<style>
+  #edit_keyword {
+    width: 500px;
+    margin-left: -250px;
+  }
+
+  #edit_keyword .dropdown.selection {
+    width: 100%  ;
+  }
+</style>
+
+<div class="ui form">
+  <div class="four fields">
+    <div class="field">
+      <label>所属分类</label>
+      <select class="ui dropdown" id="foldersSelect" data-value="<%=type%>">
+        <option value="all">全部分类</option>
+        <%
+          for (var i in keyword_types) {
+            var keyword_type = keyword_types[i];
+        %>
+        <option value="<%=keyword_type['_id']%>"><%=keyword_type['content']%></option>
+            <%
+        }
+        %>
+      </select>
+    </div>
+    <div class="field">
+      <label>关键词内容</label>
+      <input type="text" id="name" placeholder="" value="<%=content%>">
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit button" onclick="search()">
+        <i class="icon search"></i> 搜索
+      </div>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit right floated button" onclick="createKeyword()">
+        <i class="icon write"></i> 添加关键词
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+  <table class="ui small very basic table">
+    <thead>
+      <tr>
+        <th>序号</th>
+        <th>状态</th>
+        <th>关键词内容</th>
+        <th>分类</th>
+        <th>操作人</th>
+         <th width="200">创建时间</th>
+        <th width="100"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <%
+        if (conts && conts.length > 0) {
+        %>
+        <%
+          for (var i in conts) {
+            var cont = conts[i];
+        %>
+          <tr>
+            <td>
+              <%=(Number(offset) + Number(i) + 1)%>
+            </td>
+            <td>
+              <%=cont['status']?"启用":"禁用"%>
+            </td>
+            <td>
+              <%=cont['content']%>
+            </td>
+            <td>
+              <%=
+                  (function(){
+                    for(var j in keyword_types){
+                      var keyword_type = keyword_types[j]
+                      if(keyword_type['_id'] == cont['type']){
+                        return keyword_type['content'];
+                      }
+                    }
+                  })()
+              %>
+            </td>
+            <td>
+              <%=cont['username']%>
+            </td>
+            <td>
+              <%=common.format_date(cont['created'], 'yyyy-MM-dd hh:mm:ss')%>
+            </td>
+            <td style="text-align:right;">
+              <a href="javascript:;" onclick="editKeyword('<%=cont['_id']%>','<%=cont['content']%>','<%=cont['status']%>','<%=cont['type']%>')">编辑</a> &nbsp;&nbsp;
+              <a href="javascript:;" onclick="deleteKeyword('<%=cont['_id']%>')">删除</a>
+            </td>
+          </tr>
+          <%
+      }
+      %>
+
+            <% } else { %>
+              <tr>
+                <td colspan="7" style="text-align:center;">暂无数据</td>
+              </tr>
+              <% } %>
+    </tbody>
+  </table>
+</div>
+
+<%-common.paging("/rules/keywords", "content="+content+"&type="+type, totalPage, offset, limit, 5)%>
+
+<div class="ui modal" id="edit_keyword">
+  <i class="close icon"></i>
+  <div class="tiny header">
+    编辑关键词
+  </div>
+  <div class="content">
+    <form class="ui form">
+      <div class="field">
+        <label class="required_input">状态</label>
+        <div class="ui left input">
+          <select name="folder" class="ui dropdown" id="statusSelect">
+            <option value="1">启用</option>
+            <option value="0">禁用</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">分类</label>
+        <div class="ui left input">
+          <select name="type" class="ui dropdown" id="statusSelect1">
+            <%
+              for (var i in keyword_types) {
+                var keyword_type = keyword_types[i];
+            %>
+            <option value="<%=keyword_type['_id']%>"><%=keyword_type['content']%></option>
+                <%
+            }
+            %>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">内容</label>
+        <div class="ui left input">
+          <input type="text" onKeyup="spec(this);checkLength(this);" id="keyword_des">
+        </div>
+      </div>
+    </form>
+    <div class="ui hidden divider"></div>
+  </div>
+  <div class="actions">
+    <div class="ui black deny button">取消</div>
+    <div class="ui positive right labeled icon button" onClick="saveKeyword()">保存<i class="checkmark icon"></i></div>
+  </div>
+</div>
+
+<script>
+  $(function(){
+    activeUrl();
+    $("#foldersSelect").dropdown("set selected",$("#foldersSelect").attr("data-value"));
+  })
+  var Val = "";
+  $('.dropdown').dropdown();
+
+  $("#keyword_des").blur(function(){
+    var _name = $(this);
+    if(_name.val() === ""){
+      return false;
+    }
+    if($(this).parents("#edit_keyword").attr("data-id") !== "new" && $(this).val() === Val){
+      return false;
+    }else{
+      $.ajax({
+        type:'get',
+        url:'/rules/keywords/validate/'+_name.val(),
+        success:function(data){
+          if(data.status !== 20000){
+            _name.val("");
+            swal("内容已存在，请更改", "", "warning");
+          }
+        }
+      })
+    }
+  });
+
+  function search(){
+    location.href=encodeURI("?content="+$("#name").val()+"&type="+$("#foldersSelect").val()+"&limit=<%=limit%>");
+  }
+
+  function editKeyword(order, des, fol, type) {
+    Val = des;
+    $('#edit_keyword').attr("data-id", order);
+    $('#edit_keyword .header').text("修改关键词");
+    $("#keyword_des").val(des);
+    $('#statusSelect').dropdown("set selected",fol);
+    $('#statusSelect1').dropdown("set selected",type);
+    $('#edit_keyword').modal({'autofocus':false,'closable':false,onApprove:function(){return false}}).modal('show');
+  };
+
+  function createKeyword() {
+    $('#edit_keyword').attr("data-id", "new");
+    $('#edit_keyword .header').text("添加关键词");
+    $("#keyword_des").val("");
+    $('#statusSelect').dropdown("set selected",$('#statusSelect option:first-of-type').val());
+    $('#statusSelect1').dropdown("set selected",$('#statusSelect1 option:first-of-type').val());
+    $('#edit_keyword').modal({'autofocus':false,'closable':false,onApprove:function(){return false}}).modal('show');
+  };
+
+  function saveKeyword() {
+    var _order = $('#edit_keyword').attr("data-id");
+    var _des = $("#keyword_des").val();
+    var _status = $('#statusSelect').val();
+    var _type = $('#statusSelect1').val();
+
+    if (_des == "") {
+      swal("请填写内容!", "", "warning");
+      return false;
+    }
+
+    var action = {};
+    _order === "new" ? action = {title: "添加",type: "post",order: ""} : action = {title: "修改",type: "put",order: "/" + _order};
+    var params = {
+      content: _des,
+      status: _status,
+      type: _type
+    };
+
+    swal({
+        title: "确认" + action.title + "关键词？",
+        text: "",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: action.title,
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          $.ajax({
+              type: action.type,
+              url: "/rules/keywords" + action.order,
+            data: params,
+            success: function(data) {
+              swal({
+                  title: action.title + "成功",
+                  text: "",
+                  type: "success",
+                  confirmButtonText: "确定",
+                },
+                function() {
+                  setTimeout(function() {
+                    location.reload();
+                  }, 330);
+                });
+            },
+            error: function() {
+              swal(action.title + "失败，请重试", "", "error");
+            }
+          });
+      }
+    });
+  };
+
+  function deleteKeyword(id) {
+    swal({
+        title: "确认删除此关键词？",
+        text: "",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: "删除",
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          $.ajax({
+            type: "delete",
+            url: "/rules/keywords/" + id,
+            success: function(data) {
+              swal({
+                  title: "删除成功",
+                  text: "",
+                  type: "success",
+                  confirmButtonText: "确定",
+                },
+                function() {
+                  setTimeout(function() {
+                    location.reload();
+                  }, 330);
+                });
+            },
+            error: function() {
+              swal("删除失败，请重试", "", "error");
+            }
+          });
+        }
+      });
+  };
+</script>

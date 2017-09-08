@@ -1,0 +1,197 @@
+<style>
+  #dieTable{
+    width: 1000px;
+    height: 600px;
+    margin-left: -500px;
+    margin-top: -300px;
+    overflow: auto;
+  }
+
+  #dieTable tbody tr td:nth-of-type(1) div{
+    width: 150px;
+    overflow-x: hidden;
+    text-overflow:ellipsis;
+  }
+</style>
+
+<div class="ui form">
+  <div class="five fields" style="margin-bottom:0;">
+    <div class="field">
+      <label>呼叫时间</label>
+      <input type="text" class='datarangeInput' name="daterange" placeholder="选择时间" data-from="<%=from%>" data-to="<%=to%>">
+    </div>
+    <div class="field">
+      <label>分析对象</label>
+      <select name="speed_type" class="ui fluid dropdown" data-value="<%=speed_type%>">
+        <option value="0">平均语速</option>
+        <option value="1">坐席平均语速</option>
+        <option value="2">客户平均语速</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit button" onclick="search()">
+        <i class="icon search"></i>
+        搜索
+      </div>
+    </div>
+  </div>
+</div>
+<div class='ui hidden divider'></div>
+<div class="ui" style="height: 85%;">
+  <div id="barChart" style="height: 100%;"></div>
+</div>
+
+<div class="ui modal" id="dieTable">
+  <i class="close icon"></i>
+  <div class="tiny header">
+    平均语速信息
+  </div>
+  <div class="content">
+    <table class="ui compact table">
+      <thead>
+        <tr>
+          <th style="max-width:300px">录音流水号</th>
+          <th>平均语速</th>
+          <th>客户平均语速</th>
+          <th>坐席平均语速</th>
+          <th>呼叫时间</th>
+        </tr>
+      </thead>
+      <tbody>
+
+      </tbody>
+    </table>
+    <div class="ui hidden divider"></div>
+  </div>
+</div>
+<script>
+var from, to;
+  $(function(){
+    activeUrl();
+    initSearchQuery()
+
+    //初始化下拉框
+    $('.ui.dropdown').dropdown();
+
+    //初始化日期
+    initDatePicker()
+  })
+  function search() {
+    if($('.datarangeInput').val()!=="选择时间"){
+      var dateRange = $('.datarangeInput').val().split('至');
+      from = parseInt(moment(dateRange[0].trim()).valueOf());
+      to = parseInt(moment(dateRange[1].trim()).valueOf());
+    }
+
+    location.href = encodeURI("?from=" + from + "&to=" + to + "&speed_type=" + $('select[name="speed_type"]').val());
+  }
+  //初始化search query
+  function initSearchQuery() {
+    $('select[name="speed_type"]').val($('select[name="speed_type"]').attr('data-value'))
+    from = $('input[name="daterange"]').attr('data-from')
+    to = $('input[name="daterange"]').attr('data-to')
+    from = from !== ''?Number(from):'';
+    to = to!==''?Number(to):'';
+    //设定input默认时间
+    if (from !== '' && to !== '') {
+      $('input[name="daterange"]').val(moment(from).format('YYYY-MM-DD HH:mm') + " 至 " + moment(to).format('YYYY-MM-DD HH:mm'));
+    } else {
+      $('input[name="daterange"]').val('选择时间');
+    }
+  }
+  var chartData=<%- JSON.stringify(data)%>;
+  var xside = [$("select[name='speed_type'] option").eq("<%=speed_type%>").text()];
+  var barChart = echarts.init(document.getElementById('barChart'));
+  var option = {
+    		title: {
+          	text: '平均语速分布',
+      	},
+        toolbox:{
+          right:"2%",
+          feature:{
+            saveAsImage:{
+
+            }
+          }
+        },
+        tooltip : {
+            trigger: 'axis',
+            axisPointer : {            // 坐标轴指示器，坐标轴触发有效
+                type : 'shadow'        // 默认为直线，可选为：'line' | 'shadow'
+            },
+            formatter: "{b} <br/>{a}次数: {c}"
+        },
+        legend: {
+            data:xside
+        },
+        grid: {
+            left: '3%',
+            right: '4%',
+            bottom: '3%',
+            containLabel: true
+        },
+        xAxis : [
+            {
+                type : 'category',
+                data : chartData.map(function(item){
+                  return item['name']
+                })
+            }
+        ],
+        yAxis : [
+            {
+              name: "次数",
+              type : 'value',
+              minInterval: 1
+            }
+        ],
+        series : {
+            name:xside,
+            type:'bar',
+            barWidth: "60%",
+            color:["#2185d0"],
+            data:chartData.map(function(item){
+              return item['count']
+            })
+        }
+    };
+    barChart.setOption(option);
+    $(window).resize(function(){
+      barChart.resize()
+    });
+
+    setTimeout(chartClick,100)
+
+    function chartClick(){
+      barChart.on("click", function(param) {
+        var _name = param.name;
+        _name = _name.substring(0,_name.indexOf("("))
+        var _param = {
+          from:from,
+          to:to,
+          speed_type:$('select[name="speed_type"]').val(),
+          speed_name:_name
+        }
+        $.ajax({
+          type: "get",
+          url: "/charts/speech_rate/list",
+          data:_param,
+          success:function(data){
+            var _table = '';
+            for(var i in data){
+              _table += '<tr data-id="'+ data[i]._id +'">\
+                <td title="'+ data[i].seq +'"><div>'+ data[i].seq +'</div></td>\
+                <td>'+ data[i].speed +'</td>\
+                <td>'+ data[i].customer_speed +'</td>\
+                <td>'+ data[i].agent_speed +'</td>\
+                <td>'+ new Date(data[i].call_time).format("yyyy-MM-dd hh:mm:ss") +'</td>\
+              </tr>'
+            }
+            $("#dieTable tbody").html(_table);
+          }
+        })
+        $('#dieTable').modal('show');
+      })
+    }
+</script>

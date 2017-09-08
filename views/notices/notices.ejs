@@ -1,0 +1,207 @@
+<div class="ui form">
+  <div class="four fields">
+    <div class="field">
+      <label>创建时间：</label>
+      <input type="text" class='datarangeInput' name="daterange" data-from="<%=start_time%>" data-to="<%=end_time%>">
+    </div>
+    <div class="field">
+      <label>状态：</label>
+      <select class='ui dropdown assignSel' data-searchSel="<%=status%>">
+        <option value="0">未读</option>
+        <option value="1">已读</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <button class="ui blue button" onclick="search()"><i class='icon search'></i>查询</button>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui yellow right floated button" onclick="changeStatus();">
+        标为已读
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+  <table class='ui small very basic table'>
+    <thead>
+      <tr>
+        <th>
+          <div class="ui checkbox">
+            <input id="allChecked" type="checkBox">
+            <label></label>
+          </div>
+        </th>
+        <th>序号</th>
+        <th>消息内容</th>
+        <th>状态</th>
+        <th>创建时间</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (rows && rows.length > 0) { %>
+        <%
+        for (var i in rows) {
+          var row = rows[i];
+
+          %>
+          <tr data-id="<%=row['_id'] %>">
+            <td>
+              <div class="ui checkbox">
+                <input type="checkBox">
+                <label></label>
+              </div>
+            </td>
+            <td data-id="<%=row['_id']%>">
+              <%=parseInt(offset)+parseInt(i)+1%>
+            </td>
+            <td>
+              <%=row['content'] %>
+            </td>
+            <td>
+              <%=row['status']?"已读":"未读" %>
+            </td>
+            <td>
+              <%=common.format_date(row['created'], 'yyyy-MM-dd hh:mm:ss')%>
+            </td>
+
+          </tr>
+          <% } %>
+          <% } else { %>
+            <tr>
+              <td colspan="18" style="text-align:center;">暂无数据</td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <%-common.paging("/notices",  "start_time="+start_time+"&end_time="+end_time+"status="+status, totalPage, offset, limit, 5)%>
+
+      <script>
+      $(function() {
+        activeUrl();
+      });
+      $(".assignSel").dropdown("set selected",$(".assignSel").attr("data-searchSel"));
+
+      $("#sysSelect option").each(function() {
+        if ($(this).attr("value") === $("#sysSelect").attr("data-sysSearchSel")) {
+          $(this).attr("selected", true)
+          $("#sysSelect .text").html($(this).html())
+        }
+      })
+
+      $('#startDate').daterangepicker({
+        "singleDatePicker": true,
+        format : 'YYYY-MM-DD',
+        "startDate": moment().startOf('day'),
+        "endDate": moment().add(1, "d").startOf('day'),
+      }, function(start, end, label) {
+      });
+
+      $('#doneDate').daterangepicker({
+        "singleDatePicker": true,
+        format : 'YYYY-MM-DD',
+        "startDate": moment().startOf('day'),
+        "endDate": moment().add(1, "d").startOf('day'),
+      }, function(start, end, label) {
+      });
+
+      var stTime = $(".datarangeInput").attr('data-from') !== '' ? Number($(".datarangeInput").attr('data-from')) : '';
+      var edTime = $(".datarangeInput").attr('data-to') !== '' ? Number($(".datarangeInput").attr('data-to')) : '';
+
+      if($(".datarangeInput").attr('data-from') !== '' && $(".datarangeInput").attr('data-to') !== ''){
+        $('input[name="daterange"]').val(moment(stTime).format('YYYY-MM-DD HH:mm') + " 至 " + moment(edTime).format('YYYY-MM-DD HH:mm'));
+      }else{
+        $('input[name="daterange"]').val('选择时间');
+      }
+
+      $('input[name="daterange"]').daterangepicker({
+        separator: ' 至 ',
+        timePicker12Hour: false,
+        format: 'YYYY-MM-DD HH:mm',
+        locale: {
+          applyLabel: '确定',
+          cancelLabel: '关闭',
+          fromLabel : '起始时间',
+          toLabel : '结束时间',
+          customRangeLabel: "自定义日期",
+          daysOfWeek: ["日", "一", "二", "三", "四", "五", "六"],
+          monthNames: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
+        },
+        ranges : {
+          '查询全部时间': [moment(),moment()]
+        },
+        "timePicker": true,
+        "timePicker24Hour": true
+      }, function(start, end, label) {
+        if(label=="查询全部时间"){
+          stTime = '';
+          edTime = '';
+          $('input[name="daterange"]').val('查询全部时间');
+        }
+      });
+      $('input[name="daterange"]').change(function(){
+        var timeArr;
+        if($(this).val()!=='查询全部时间'){
+          timeArr=$(this).val().split(" 至 ")
+          stTime = parseInt(moment(timeArr[0]).valueOf());
+          edTime = parseInt(moment(timeArr[1]).valueOf());
+        }
+      })
+      //搜索
+      function search() {
+        var status = parseInt($(".assignSel").find("option:selected").val());
+
+        location.href = encodeURI("?startTime=" + stTime + "&endTime=" + edTime + "&status=" + status+"&limit=<%=limit%>" );
+      }
+      //table全选全不选
+      $('tbody').delegate("input", "change", function() {
+        if ($('tbody input:checked').length === $('tbody input').length) {
+          $("#allChecked").prop("checked", true);
+        } else {
+          $("#allChecked").prop("checked", false);
+        }
+      });
+      $("#allChecked").click(function() {
+        if ($(this).prop("checked") === true) {
+          $('tbody input').prop("checked", true);
+        } else {
+          $('tbody input').prop("checked", false);
+        }
+      });
+
+      function changeStatus(){
+        if($('tbody input:checked').length === 0){
+          swal("请先选中消息内容","","warning");
+          return false;
+        };
+        var idArr = [];
+        $('tbody input:checked').each(function(){
+          idArr.push($(this).parents("tr").attr("data-id"));
+        });
+        $.ajax({
+          type: "post",
+          url:"/notices/update",
+          dataType: 'json',
+          contentType : "application/json",
+          data:JSON.stringify(idArr),
+          success:function(data) {
+            swal({
+              title: "标记成功",
+              text: "",
+              type: "success",
+              confirmButtonText: "确定",
+            },
+            function() {
+              setTimeout(function() {
+                location.reload();
+              }, 330);
+            });
+          }
+        })
+
+      }
+      </script>

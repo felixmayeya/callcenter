@@ -1,0 +1,305 @@
+<style>
+  #edit_weight {
+    width: 500px;
+    margin-left: -250px;
+  }
+
+  #edit_weight .dropdown.selection {
+    width: 100%;
+  }
+
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+  }
+  input[type="number"]{
+      -moz-appearance: textfield;
+  }
+</style>
+
+<div class="ui form">
+  <div class="four fields">
+    <div class="field">
+      <label>所属业务</label>
+      <select class="ui dropdown" id="foldersSelect" data-value="<%=system%>">
+        <option value="all">全部业务</option>
+        <%
+          for (var i in systems) {
+            var _systems = systems[i];
+        %>
+        <option value="<%=_systems['_id']%>"><%=_systems['name']%></option>
+            <%
+        }
+        %>
+      </select>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit button" onclick="search()">
+        <i class="icon search"></i> 搜索
+      </div>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui blue button right floated" onclick="createWeight();">
+        添加权重
+      </div>
+      <div class="ui yellow button right floated" onclick="location.href='scores'">
+        返回评分
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+  <table class="ui small very basic table">
+    <thead>
+      <tr>
+        <th>所属业务</th>
+        <th>智能质检权重</th>
+        <th>人工质检权重</th>
+        <th width="100"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <%
+        if (conts && conts.length > 0) {
+        %>
+        <%
+          for (var i in conts) {
+            var cont = conts[i];
+        %>
+          <tr>
+            <td><%= common.get_sys_name(cont.system, systems) %></td>
+            <td>
+              <%=cont['intelligent']%>
+            </td>
+            <td>
+              <%=cont['artificial']%>
+            </td>
+            <td style="text-align:right;">
+              <a href="javascript:;" onclick="editWeight('<%=cont['_id']%>','<%=cont['system']%>','<%=cont['intelligent']%>','<%=cont['artificial']%>')">编辑</a> &nbsp;&nbsp;
+              <a href="javascript:;" onclick="deleteWeight('<%=cont['_id']%>')">删除</a>
+            </td>
+          </tr>
+          <%
+      }
+      %>
+
+            <% } else { %>
+              <tr>
+                <td colspan="4" style="text-align:center;">暂无数据</td>
+              </tr>
+              <% } %>
+    </tbody>
+  </table>
+</div>
+
+<%-common.paging("/rules/weights", "system="+system, totalPage, offset, limit, 5)%>
+
+<div class="ui modal" id="edit_weight">
+  <i class="close icon"></i>
+  <div class="tiny header">
+    编辑权重
+  </div>
+  <div class="content">
+    <form class="ui form">
+      <div class="field">
+        <label class="required_input">所属业务</label>
+        <div class="ui left input">
+          <select name="editWeightSystem" class="ui dropdown" id="editWeightSystem">
+            <%
+              for (var i in systems) {
+                var _systems = systems[i];
+            %>
+            <option value="<%=_systems['_id']%>"><%=_systems['name']%></option>
+                <%
+            }
+            %>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">智能质检权重</label>
+        <div class="ui left input">
+          <input type="number" id="weight_score">
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">人工质检权重</label>
+        <div class="ui left input">
+          <input type="number" id="weight_score_per" readonly>
+        </div>
+      </div>
+    </form>
+    <div class="ui hidden divider"></div>
+  </div>
+  <div class="actions">
+    <div class="ui black deny button">取消</div>
+    <div class="ui positive submit right labeled icon button" onClick="saveWeight()">保存<i class="checkmark icon"></i></div>
+  </div>
+</div>
+
+<script>
+  $(function(){
+    $("#demo-list a").each(function(){
+      if($(this).attr("href") === "/rules/scores"){
+        $(this).parents("ul").show();
+        $(this).parents("li").addClass("activeMenu");
+        $(this).parents("ul").siblings("a").addClass("submenu-indicator-minus");
+      }
+    })
+  })
+  var Val = "";
+  $('.dropdown').dropdown();
+  $('#foldersSelect').dropdown("set selected",$('#foldersSelect').attr("data-value"))
+
+  $("#weight_score").blur(function(){
+    var _val = $(this).val();
+    if(_val > 100){
+      $(this).val("");
+      swal("值必须小于100", "", "warning");
+      return false;
+    }
+    $("#weight_score_per").val(100-_val);
+  })
+
+  $("#editWeightSystem").parent().dropdown({
+    onChange:function(value){
+      if(value === Val){
+        return false;
+      }
+      $.ajax({
+        type:'get',
+        url:'/rules/weights/validate/'+value,
+        success:function(data){
+          if(data.status !== 20000){
+            $("#editWeightSystem").dropdown("clear");
+            swal("该业务权重已存在，请重新选择", "", "warning");
+          }
+        }
+      })
+    }
+  })
+
+  function search(){
+    location.href=encodeURI("?system="+$("#foldersSelect").val()+"&limit=<%=limit%>");
+  }
+
+  function editWeight(order, name, des, fol) {
+    Val = name;
+    $('#edit_weight').attr("data-id", order);
+    $('#edit_weight .header').text("修改权重");
+    $("#weight_score").val(des);
+    $('#weight_score_per').val(fol);
+    $('#editWeightSystem').dropdown("set selected",name);
+    $('#edit_weight').modal({'autofocus':false,'closable':false,onApprove:function(){return false}}).modal('show');
+  };
+
+  function createWeight() {
+    $('#edit_weight').attr("data-id", "new");
+    $('#edit_weight .header').text("添加权重");
+    $("#weight_score").val("");
+    $('#weight_score_per').val("");
+    $('#editWeightSystem').dropdown("set selected",$('#editWeightSystem option:first-of-type').val());
+    $('#edit_weight').modal({'autofocus':false,'closable':false,onApprove:function(){return false}}).modal('show');
+  };
+
+  function saveWeight() {
+    var _order = $('#edit_weight').attr("data-id");
+    var _system = $("#editWeightSystem").val();
+    var _base = $("#weight_score_per").val();weight_score_per
+    var _value = $('#weight_score').val();
+
+    if (_value == "") {
+      swal("请填写分值!", "", "warning");
+      return false;
+    }
+
+    var action = {};
+    _order === "new" ? action = {title: "添加",type: "post",order: ""} : action = {title: "修改",type: "put",order: "/" + _order};
+    var params = {
+      system: _system,
+      intelligent: _value,
+      artificial: _base
+    };
+
+    swal({
+        title: "确认" + action.title + "权重？",
+        text: "",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: action.title,
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          $.ajax({
+              type: action.type,
+              url: "/rules/weights" + action.order,
+            data: params,
+            success: function(data) {
+              swal({
+                  title: action.title + "成功",
+                  text: "",
+                  type: "success",
+                  confirmButtonText: "确定",
+                },
+                function() {
+                  setTimeout(function() {
+                    location.reload();
+                  }, 330);
+                });
+            },
+            error: function() {
+              swal(action.title + "失败，请重试", "", "error");
+            }
+          });
+      }
+    });
+  };
+
+  function deleteWeight(id) {
+    swal({
+        title: "确认删除此权重？",
+        text: "",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: "删除",
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          $.ajax({
+            type: "delete",
+            url: "/rules/weights/" + id,
+            success: function(data) {
+              swal({
+                  title: "删除成功",
+                  text: "",
+                  type: "success",
+                  confirmButtonText: "确定",
+                },
+                function() {
+                  setTimeout(function() {
+                    location.reload();
+                  }, 330);
+                });
+            },
+            error: function() {
+              swal("删除失败，请重试", "", "error");
+            }
+          });
+        }
+      });
+  };
+</script>

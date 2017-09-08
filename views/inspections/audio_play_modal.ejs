@@ -1,0 +1,515 @@
+<link rel="stylesheet" href="/js/wavesurfer/style.css" />
+<link rel="stylesheet" href="/js/wavesurfer/ribbon.css" />
+<style>
+  .lrc-current { color:#E65D6E; }
+  .lrc-area { overflow-y:auto;height:500px;}
+  .lrc-area ul li {cursor: pointer;}
+  .audio-player {
+    width:100%;
+    height:36px;
+    background: #404040;
+    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #444), color-stop(0.5, #555), color-stop(0.51, #444), color-stop(1, #444));
+  }
+  .audio-player i { margin:0;}
+  a.play-pause { display: block;padding: 9px 10px 7px 10px;border-right: 1px solid #000;color: #fff; cursor:pointer;float: left;opacity:0.8}
+  a.play-pause:hover {opacity: 1;color: #fff;}
+
+  .audio-info {float: right;height: 36px;line-height: 36px;color:#fff;opacity: 0.8;padding: 0 8px;border-left:solid 1px #000;font-size:12px;}
+  .audio-volume {position: relative;float:right;}
+  .audio-volume>a.audio-volume-btn {display:block;height:36px;line-height:36px;padding:0 10px;border-left:solid 1px #000;font-size: 16px;color: #fff;opacity:0.8}
+  .audio-volume>a.audio-volume-btn:hover {opacity: 1;cursor: pointer;}
+  .volume-bar  {position: absolute;left: 8px;bottom: 100%;box-sizing: content-box;width: 8px;height: 64px;padding: 8px;display: block;background-color: #444;border: 1px solid #222;border-radius: 2px;z-index: 999;}
+  .volume-bar-ajust {display: block;position: relative;width: 100%;height: 100%;cursor: pointer;box-shadow: -1px -1px 0 rgba( 0, 0, 0, 0.5 ), 1px 1px 0 rgba( 255, 255, 255, 0.1 );}
+  .volume-bar-ajust-active { display: block;position: absolute;left: 0px;bottom: 0px;width: 100%;height: 48%;background-color: #fcc500;}
+
+  .audio-play-rate {position:relative;float:right;}
+  .audio-play-rate>a.play-rate-btn {display:block;height:36px;line-height:36px;padding:0 10px;color:#fff;font-size:12px;opacity: 0.8;cursor:pointer;border-left:solid 1px #000;}
+  .audio-play-rate>a.play-rate-btn:hover {opacity:1;}
+
+  ul.play-rate-list {position: absolute;left: 0;bottom: 100%;box-sizing: border-box;display: block;width:100%;background-color: #444;border: 1px solid #222;border-radius: 2px;z-index: 999;list-style:none;margin: 0;color: #fff;padding: 3px 0;font-size: 12px;}
+  ul.play-rate-list > li {padding:3px 0;text-align:center;cursor:pointer;}
+  ul.play-rate-list > li:hover {background:#fcc500}
+  ul.play-rate-list > li.active {background:#fcc500}
+</style>
+<div class="ui modal" id="audio-play-modal">
+  <i class="close icon"></i>
+  <div class="tiny header">
+    录音播放
+  </div>
+  <div class="content">
+    <div id="waveform"></div>
+    <div class="audio-player">
+      <a class="play-pause">
+        <i class="pause icon"></i>
+      </a>
+      <div class="audio-volume">
+        <a class="audio-volume-btn">
+          <i class="volume up icon"></i>
+        </a>
+        <div class="volume-bar hidden" style="display:none">
+          <div class="volume-bar-ajust">
+            <div class="volume-bar-ajust-active"></div>
+          </div>
+        </div>
+      </div>
+      <div class="audio-play-rate">
+        <a href="javascript:void(0)" class="play-rate-btn" >
+          播放速度
+        </a>
+        <ul class="play-rate-list" style="display:none">
+          <li class="rate-item" data-value="1.5">1.5</li>
+          <li class="rate-item" data-value="1.2">1.2</li>
+          <li class="rate-item active" data-value="1">正常</li>
+          <li class="rate-item" data-value="0.8">0.8</li>
+          <li class="rate-item" data-value="0.5">0.5</li>
+        </ul>
+      </div>
+      <div class="audio-info">
+        <span class="current-time">00:00</span>&nbsp;/&nbsp;<span class="duration">00:00</span>
+      </div>
+    </div>
+    <div class="list-group" id="playlist">
+        <a href="/radio/13639394640.mp3" class="list-group-item">
+          <i class="glyphicon glyphicon-play"></i>
+        </a>
+    </div>
+    <div class="ui stacked grey segment lrc-area">
+      <ul class="ui list audioText ">
+      </ul>
+      <textarea rows="10" cols="121" style="text-align:left;display:none;" class="lrc-content">
+      </textarea>
+      <textarea rows="10" cols="121" style="text-align:left;display:none;" class="lrc-keywords">
+      </textarea>
+    </div>
+  </div>
+  <div class="actions">
+    <div class="ui tiny positive right button">
+      关闭
+    </div>
+  </div>
+</div>
+<script src="/js/wavesurfer/wavesurfer.min.js"></script>
+<script src="/js/wavesurfer/wavesurfer.regions.js"></script>
+<script src="/js/wavesurfer/util.js"></script>
+<script>
+var lrcIndex, lrcTime, lrcLine, wavesurfer,emotionTimeList = [];
+
+//播放audio
+function showAudio(id,type) {
+  emotionTimeList = [];
+  $('#audio-play-modal').modal({
+    onShow: function() {
+      $.get("/inspection/" + type + "/" + id, function(data, status) {
+        if (status == "success") {
+          $('.lrc-content').val(JSON.stringify(data.dialog_json))
+          $('.lrc-keywords').val(JSON.stringify(data.keywords))
+          $('#playlist > a').attr({'href': data.radio_path})
+          var playArr = data.dialog_json.sentence;
+          if(playArr !== undefined){
+            for(var i = 0;i < playArr.length;i++){
+              if(playArr[i].emotion_type !== ""){
+                emotionTimeList.push({start: playArr[i].start_time/1000,end: playArr[i].end_time/1000});
+              }
+            }
+            initAudio()
+          }
+        } else {
+          alert(data);
+        }
+      })
+    },
+    onHidden: function() {
+      wavesurfer.destroy();
+      $(".play-pause").unbind();
+      $(".volume-bar-ajust").unbind();
+      $(".audio-volume-btn").unbind();
+      $(".audio-volume").unbind();
+      $(".audio-play-rate").unbind();
+      $(".play-rate-list").unbind();
+      $(".audioText").unbind();
+
+      $("#waveform").empty();
+
+      //标记结束时间
+      $.ajax({
+        type: "put",
+        url: "/audios/study/"+type+"/"+id,
+        success: function(data) {
+            console.log("标记学习结束时间成功");
+        },
+        error: function(err) {
+          swal("标记学习结束时间失败，请重试！", "", "error")
+        }
+      });
+
+    }
+  }).modal('show')
+}
+
+function initAudio() {
+  /**
+ * audio
+ */
+  wavesurfer = WaveSurfer.create({
+    container: '#waveform',
+    waveColor: '#A8DBA8',
+    progressColor: '#3B8686',
+    height: 120,
+    barWidth: 0.5,
+    scrollParent: true,
+    minPxPerSec:18
+  })
+  lrcIndex = 0;
+  lrcTime = [];
+  lrcLine = [];
+
+  keywords = JSON.parse($(".lrc-keywords").val())
+  wordList = $.map(keywords, function(item){
+    return item.word
+  })
+  wordList = _.uniq(wordList)
+
+  setLrc();
+
+  bindAudioDom();
+
+  //playlist
+  var currentTrack = 0;
+
+  // The playlist links
+  var links = document.querySelectorAll('#playlist a');
+
+  // Load a track by index and highlight the corresponding link
+  var setCurrentSong = function(index) {
+    links[currentTrack].classList.remove('active');
+    currentTrack = index;
+    links[currentTrack].classList.add('active');
+    var audioUrl = links[currentTrack].href
+    if(audioUrl&&audioUrl!=='') {
+      wavesurfer.load(audioUrl);
+    }
+  };
+
+  // Load the track on click
+  Array.prototype.forEach.call(links, function(link, index) {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      setCurrentSong(index);
+    });
+  });
+
+  // Play on audio load
+  wavesurfer.on('ready', function() {
+    var regions = emotionTimeList;
+    console.log(regions);
+    // var regions = [
+    //   {
+    //     start: 60,
+    //     end: 100
+    //   }, {
+    //     start: 300,
+    //     end: 400
+    //   }
+    // ]
+    addRegion(regions)
+
+    //标注keyword
+    markKeyword(keywords)
+
+    var duration = wavesurfer.getDuration();
+    var durationTxt = secondToTime(duration, "comma");
+
+    $(".duration").html(durationTxt);
+
+    //初始对话位置
+    updateLrc(0);
+    wavesurfer.play();
+  });
+
+  // Go to the next track on finish
+  // wavesurfer.on('finish', function() {
+  //   setCurrentSong((currentTrack + 1) % links.length);
+  // });
+
+  // Load the first track
+  setCurrentSong(currentTrack);
+}
+
+function bindAudioDom() {
+  var playing = true;
+  var lrcInterval;
+  $(".play-pause").on('click', function(event){
+    wavesurfer.playPause();
+  })
+
+  // Toggle play/pause text
+  wavesurfer.on('play', function() {
+    $(".play-pause").find("i")[0].className = "pause icon";
+
+    lrcInterval = setInterval(function(){
+      var currentTime = wavesurfer.getCurrentTime()
+      $(".current-time").html(secondToTime(currentTime, "comma"))
+      updateLrc(currentTime)
+    },1000);
+  });
+  wavesurfer.on('pause', function() {
+    $(".play-pause").find("i")[0].className = "play icon";
+    window.clearInterval(lrcInterval);
+  });
+
+  //音量调节
+  var volume = 0.8;
+  var barHeight = 64;
+  var volumeIcon = $(".audio-volume-btn");
+  var muted = false;
+  updateBar($(".volume-bar-ajust-active"), volume, 'height')
+
+  $(".volume-bar-ajust").on('click', function(event){
+    var e = event || window.event;
+    var volumeBar = $(".volume-bar-ajust");
+    var percentage = (barHeight-e.clientY+getElementViewTop(volumeBar)) / barHeight;
+    percentage = percentage > 0 ? percentage : 0;
+    percentage = percentage < 1 ? percentage : 1;
+    volume = percentage
+
+    updateBar($(".volume-bar-ajust-active"), percentage, 'height');
+
+    if(percentage > 0){
+      volumeIcon.find("i")[0].className = "volume up icon"
+    }
+
+    if(percentage === 0){
+      volumeIcon.find("i")[0].className = "volume off icon"
+    }
+
+    wavesurfer.setVolume(volume);
+  })
+
+  //静音开关
+  volumeIcon.on('click', function(event){
+    var vol = volume;
+    if(muted){
+      muted = false;
+      volumeIcon.find('i')[0].className = "volume up icon";
+      updateBar($(".volume-bar-ajust-active"), volume, 'height')
+    }else{
+      muted = true;
+      vol = 0;
+      volumeIcon.find('i')[0].className = "volume off icon";
+      updateBar($(".volume-bar-ajust-active"), 0, 'height')
+    }
+    wavesurfer.setVolume(vol);
+  })
+
+  //volumebar 显示隐藏
+  $(".audio-volume").on('mouseover', function(event){
+    $(".volume-bar").css({
+      "display": "block"
+    })
+  })
+  $(".audio-volume").on('mouseout', function(event){
+    $(".volume-bar").css({
+      "display": "none"
+    })
+  })
+
+  //监听播放速度
+  $(".audio-play-rate").on('mouseover', function(event){
+    $(".play-rate-list").css({
+      "display": "block"
+    })
+  })
+  $(".audio-play-rate").on('mouseout', function(event){
+    $(".play-rate-list").css({
+      "display": "none"
+    })
+  })
+
+  $(".play-rate-list").delegate("li", "click", function(event){
+    $(".play-rate-list").find(".active").removeClass("active");
+    $(this).addClass("active");
+    var rate = Number($(this).attr("data-value"))
+    setPlayRate(rate)
+  })
+
+  //点击录音内容跳转
+  $(".audioText").delegate("li", "click", function(event){
+    wavesurfer.pause()
+    var sec = $(this).attr("data-second");
+    var totalSec = wavesurfer.getDuration();
+    wavesurfer.seekTo(parseInt(sec/totalSec*100)/100)
+    $(".current-time").html(secondToTime(sec, "comma"))
+    updateLrc(sec)
+    wavesurfer.play()
+  })
+}
+
+function updateBar(el, percentage, direction) {
+  percentage = percentage > 0 ? percentage : 0;
+  percentage = percentage < 1 ? percentage : 1;
+  $(el)[0].style[direction] = percentage*100 + '%';
+}
+
+function getElementViewTop (element) {
+  var actualTop = element[0].offsetTop;
+  var current = element[0].offsetParent;
+  var elementScrollTop;
+  while (current !== null){
+    actualTop += current.offsetTop;
+    current = current.offsetParent;
+  }
+  elementScrollTop = document.body.scrollTop + document.documentElement.scrollTop;
+  return actualTop - elementScrollTop;
+}
+
+//获取音频文本内容并格式化显示
+function setLrc() {
+  var timeExp = /\[(\d{2}):(\d{2})\.(\d{2})]/;
+  var lrcExp = /](.*)$/;
+  var notLrcLineExp = /\[[A-Za-z]+:/;
+  var tpl = ''
+
+  var lrcObj = JSON.parse($(".lrc-content").val());
+  var lines = []
+
+  if(!lrcObj.sentence||lrcObj.sentence.length===0){
+    return false;
+  }
+
+  $.each(lrcObj.sentence, function(idx, lrc){
+    var role = lrc.role==1?'坐席':'客戶'
+    var line = '['+secondToTimeFloat(lrc.start_time/1000)+']&nbsp;'+'['+role+']&nbsp;'+lrc.sentence_text;
+    lines.push(line)
+  })
+
+  for (var i = 0; i < lines.length; i++) {
+    lines[i] = lines[i].replace(/^\s+|\s+$/g, '');
+    var oneTime = timeExp.exec(lines[i]);
+    var oneLrc = lrcExp.exec(lines[i]);
+    if(oneTime && oneLrc && !lrcExp.exec(lrcExp.exec(oneLrc[1])[1])){
+      lrcTime.push(parseInt(oneTime[1]) * 60 + parseInt(oneTime[2]) + parseInt(oneTime[3]) / 100);
+      lrcLine.push(oneLrc[1]);
+    }
+    if(wordList&&wordList.length>0){
+      $.each(wordList, function(idx, item){
+        var reg = new RegExp(item, 'g')
+        lines[i]=lines[i].replace(reg, "<span style='color:#54c8ff;'>"+item+"</span>")
+      })
+    }
+
+    if(i==0){
+      tpl+= '<li class="lrc-current" data-second="'+lrcTime[i]+'">' + lines[i] + '</li>'
+    }else{
+      tpl += '<li data-second="'+lrcTime[i]+'">' + lines[i] + '</li>'
+    }
+  }
+  $(".audioText").html(tpl)
+}
+
+//更新文字位置
+function updateLrc(currentTime) {
+  if (!currentTime) {
+    var currentTime = wavesurfer.getCurrentTime();
+  }
+
+  if(currentTime === 0){
+    $('.audioText').css({
+      'transform': 'translateY(' + 0 + 'px)'
+    })
+    return false;
+  }
+
+  if (currentTime < lrcTime[lrcIndex] || currentTime >= lrcTime[lrcIndex + 1]) {
+    for (var i = 0; i < lrcTime.length; i++) {
+      if (currentTime >= lrcTime[i] && (!lrcTime[i + 1] || currentTime < lrcTime[i + 1])) {
+        lrcIndex = i;
+        $('.audioText').css({
+          'transform': 'translateY(' + -lrcIndex * 22 + 'px)'
+        })
+        $('.lrc-current') && $('.lrc-current').removeClass('lrc-current');
+        var lrcList = $('.audioText').find('li');
+        if(lrcList&&lrcList.length>0){
+          if(lrcList[i]){
+            lrcList[i].classList.add('lrc-current');
+          }
+        }
+      }
+    }
+  }
+}
+
+
+//添加标注区域
+function addRegion(regions) {
+  if(regions&&regions.length>0){
+    $.each(regions, function(idx, region) {
+      wavesurfer.addRegion({
+        start: region.start,
+        end: region.end,
+        drag: false,
+        color: region.color || "rgba(255,0,0,0.1)"
+      })
+    })
+  }
+}
+
+//调整播放速度
+function setPlayRate(rate) {
+  wavesurfer.setPlaybackRate(rate);
+}
+
+//add 0
+var add0 = function (num) {
+  return num < 10 ? '0' + num : '' + num;
+};
+
+// format second to 00:00
+function secondToTime(second) {
+  var min = parseInt(second / 60);
+  var sec = parseInt(second - min * 60);
+  return add0(min) + ':' + add0(sec);
+}
+
+// format second to 00:00.00
+function secondToTimeFloat(second) {
+  var min = parseInt(second / 60);
+  var second = String(parseInt((second - min * 60)*100)/100)
+  var sec = second.split(/\./)[0];
+  var microSec = second.split(/\./)[1];
+
+  if(microSec && microSec.length === 1){
+    microSec = microSec+'0'
+  } else if(!microSec) {
+    microSec = '00'
+  }
+
+  return add0(min) + ':' + add0(sec) + '.' + microSec;
+}
+
+//标注关键词
+function markKeyword(keywords){
+  var keyList = $("#waveform").find("span");
+  if(keyList&&keyList.length>0){
+    $.each(keyList, function(idx, item){
+      $(item).remove();
+    })
+  }
+  if(keywords&&keywords.length>0){
+    var w = wavesurfer.drawer.width;
+    var h = $("#waveform").height()
+    var duration = wavesurfer.getDuration();
+    $.each(keywords, function(idx, keyword){
+      if(keyword.time/1000>duration){
+        return false
+      }
+      var percentage = keyword.time/1000/duration
+      var positionX = w * percentage;
+      var positionY = idx % 2 * (h - 45);
+      console.log(positionX)
+      console.log(positionY)
+      var tpl = '<span style="position:absolute;font-size:14px;color:#2185d0;z-index:1;white-space:nowrap;display:inline-block;padding:2px 8px;color:#fff;background:#fbbd08;font-size:12px;border-radius:3px;top:'+positionY+'px;left:'+positionX+'px;">'+keyword.word+'</span>'
+      $("#waveform > wave").append(tpl)
+    })
+  }
+}
+</script>

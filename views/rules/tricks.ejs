@@ -1,0 +1,311 @@
+<style>
+  #edit_trick {
+    width: 500px;
+    margin-left: -250px;
+  }
+
+  #edit_trick .dropdown.selection {
+    width: 100%;
+  }
+
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+  }
+  input[type="number"]{
+      -moz-appearance: textfield;
+  }
+</style>
+
+<div class="ui form">
+  <div class="four fields">
+    <div class="field">
+      <label>标准话术名称</label>
+      <input type="text" id="name" placeholder="" value="<%=name%>">
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit button" onclick="search()">
+        <i class="icon search"></i> 搜索
+      </div>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit right floated button" onclick="createTrick()">
+        <i class="icon write"></i> 添加标准话术
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+  <table class="ui small very basic table">
+    <thead>
+      <tr>
+        <th>序号</th>
+        <th>标准话术名称</th>
+        <th>状态</th>
+        <th width="300">标准话术内容</th>
+        <th>阈值</th>
+        <th>操作人</th>
+        <th>创建时间</th>
+        <th width="100"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <%
+        if (conts && conts.length > 0) {
+        %>
+        <%
+          for (var i in conts) {
+            var cont = conts[i];
+        %>
+          <tr>
+            <td>
+              <%=(Number(offset) + Number(i) + 1)%>
+            </td>
+            <td>
+              <%=cont['name']%>
+            </td>
+            <td>
+              <%=cont['status']==0?"禁用":"启用"%>
+            </td>
+            <td>
+              <%=cont['content']%>
+            </td>
+            <td>
+              <%=cont['threshold']%>
+            </td>
+            <td>
+              <%=cont['username']%>
+            </td>
+            <td>
+              <%=common.format_date(cont['created'], 'yyyy-MM-dd hh:mm:ss')%>
+            </td>
+            <td style="text-align:right;">
+              <a href="javascript:;" onclick="editTrick('<%=cont['_id']%>','<%=cont['name']%>','<%=cont['content']%>','<%=cont['status']%>','<%=cont['threshold']%>')">编辑</a> &nbsp;&nbsp;
+              <a href="javascript:;" onclick="deleteTrick('<%=cont['_id']%>')">删除</a>
+            </td>
+          </tr>
+          <%
+      }
+      %>
+
+            <% } else { %>
+              <tr>
+                <td colspan="8" style="text-align:center;">暂无数据</td>
+              </tr>
+              <% } %>
+    </tbody>
+  </table>
+</div>
+
+<%-common.paging("/rules/tricks", "name="+name, totalPage, offset, limit, 5)%>
+
+<div class="ui modal" id="edit_trick">
+  <i class="close icon"></i>
+  <div class="tiny header">
+    编辑话术
+  </div>
+  <div class="content">
+    <form class="ui form">
+      <div class="field">
+        <label class="required_input">名称</label>
+        <div class="ui left input">
+          <input type="text" onKeyup="spec(this);checkLength(this);" id="trick_name" >
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">状态</label>
+        <div class="ui left input">
+          <select name="folder" class="ui dropdown" id="statusSelect">
+            <option value="1">启用</option>
+            <option value="0">禁用</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">阈值（0.01~0.99）</label>
+        <div class="ui left input">
+          <input type="number" max=1 id="trick_thre" onkeyup="thre()">
+        </div>
+      </div>
+      <div class="field">
+        <label class="required_input">内容</label>
+        <div class="ui left input">
+          <input type="text" onKeyup="spec(this);checkLength(this);" id="trick_des" >
+        </div>
+      </div>
+    </form>
+    <div class="ui hidden divider"></div>
+  </div>
+  <div class="actions">
+    <div class="ui black deny button">取消</div>
+    <div class="ui positive submit right labeled icon button" onClick="saveTrick()">保存<i class="checkmark icon"></i></div>
+  </div>
+</div>
+
+<script>
+  $(function(){
+    activeUrl();
+  })
+  var Val = "";
+  $('#statusSelect').dropdown();
+
+  $("#trick_name").blur(function(){
+    if($(this).parents("#edit_trick").attr("data-id") !== "new" && $(this).val() === Val){
+      return false;
+    }else{
+      distinct(this,'/rules/tricks');
+    }
+  });
+
+  function search(){
+    location.href=encodeURI("?name="+$("#name").val()+"&limit=<%=limit%>");
+  }
+
+  function thre (){
+    var _thre = $("#trick_thre").val();
+    if(_thre.length > 3){
+      var reg=/^0\.((0[1-9])|([1-9]\d))$/;
+      if(!reg.test(_thre)){
+        $("#trick_thre").val("");
+      }
+    }else{
+      if(_thre > 0.99){
+        $("#trick_thre").val("");
+      }
+    }
+  }
+
+  function editTrick(order, name, des, fol, thre) {
+    Val = name;
+    $('#edit_trick').attr("data-id", order);
+    $('#edit_trick .header').text("修改话术");
+    $("#trick_name").val(name);
+    $("#trick_des").val(des);
+    $("#trick_thre").val(thre);
+    $('#statusSelect').dropdown("set selected",fol);
+    $('#edit_trick').modal({'autofocus':false,'closable':false,onApprove:function(){return false}}).modal('show');
+  };
+
+  function createTrick() {
+    $('#edit_trick').attr("data-id", "new");
+    $('#edit_trick .header').text("添加话术");
+    $("#trick_name").val("");
+    $("#trick_des").val("");
+    $("#trick_thre").val("");
+    $('#statusSelect').dropdown("set selected",$('#statusSelect option:first-of-type').val());
+    $('#edit_trick').modal({'autofocus':false,'closable':false,onApprove:function(){return false}}).modal('show');
+  };
+
+  function saveTrick() {
+    var _order = $('#edit_trick').attr("data-id");
+    var _name = $("#trick_name").val();
+    var _thre = $("#trick_thre").val();
+    var _des = $("#trick_des").val();
+    var _status = $('#statusSelect').val();
+
+    if (_name == "") {
+      swal("请填写名称!", "", "warning");
+      return false;
+    }
+
+    if (_des == "") {
+      swal("请填写内容!", "", "warning");
+      return false;
+    }
+
+    if (_thre == "") {
+      swal("请填写阈值!", "", "warning");
+      return false;
+    }
+
+    var action = {};
+    _order === "new" ? action = {title: "添加",type: "post",order: ""} : action = {title: "修改",type: "put",order: "/" + _order};
+    var params = {
+      name: _name,
+      content: _des,
+      threshold: _thre,
+      status: _status
+    };
+
+    swal({
+        title: "确认" + action.title + "话术？",
+        text: "",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: action.title,
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          $.ajax({
+              type: action.type,
+              url: "/rules/tricks" + action.order,
+            data: params,
+            success: function(data) {
+              swal({
+                  title: action.title + "成功",
+                  text: "",
+                  type: "success",
+                  confirmButtonText: "确定",
+                },
+                function() {
+                  setTimeout(function() {
+                    location.reload();
+                  }, 330);
+                });
+            },
+            error: function() {
+              swal(action.title + "失败，请重试", "", "error");
+            }
+          });
+      }
+    });
+  };
+
+  function deleteTrick(id) {
+    swal({
+        title: "确认删除此话术？",
+        text: "",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: "删除",
+        cancelButtonText: "取消",
+        closeOnConfirm: false,
+        closeOnCancel: true
+      },
+      function(isConfirm) {
+        if (isConfirm) {
+          $.ajax({
+            type: "delete",
+            url: "/rules/tricks/" + id,
+            success: function(data) {
+              swal({
+                  title: "删除成功",
+                  text: "",
+                  type: "success",
+                  confirmButtonText: "确定",
+                },
+                function() {
+                  setTimeout(function() {
+                    location.reload();
+                  }, 330);
+                });
+            },
+            error: function() {
+              swal("删除失败，请重试", "", "error");
+            }
+          });
+        }
+      });
+  };
+</script>

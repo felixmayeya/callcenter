@@ -1,0 +1,297 @@
+<div class="ui form">
+  <div class="five fields" style="margin-bottom:0;">
+    <div class="field">
+      <label>时间筛选</label>
+      <input type="text" class='datarangeInput' name="daterange" placeholder="选择时间" data-from="" data-to="">
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div class="ui  blue submit button" onclick="search()">
+        <i class="icon search"></i>
+        搜索
+      </div>
+    </div>
+  </div>
+</div>
+<div class="ui segments">
+  <div class="ui segment">
+    <p>分析报表-综合得分</p>
+  </div>
+  <div class="ui secondary segment">
+    <div class="ui">
+      <div id="lineChart" style="height: 400px;"></div>
+    </div>
+  </div>
+</div>
+<div class="ui segments">
+  <div class="ui segment">
+    <p>分析报表-质检任务</p>
+  </div>
+  <div class="ui secondary segment">
+    <div class="ui" style="height: 85%;">
+      <div id="barChart" style="height: 400px;"></div>
+    </div>
+  </div>
+</div>
+<div class="ui segments">
+  <div class="ui segment">
+    <p>分析报表-违规占比</p>
+  </div>
+  <div class="ui secondary segment">
+    <div class="ui" style="height: 85%;">
+      <div id="pieChart2" style="height: 400px;"></div>
+    </div>
+  </div>
+</div>
+<script>
+  $(function(){
+    activeUrl();
+    initSearchQuery()
+    initDatePicker()
+
+  })
+
+  //初始化search query
+  function initSearchQuery() {
+    from = $('input[name="daterange"]').attr('data-from')
+    to = $('input[name="daterange"]').attr('data-to')
+    from = from !== ''?Number(from):'';
+    to = to!==''?Number(to):'';
+    //设定input默认时间
+    if (from !== '' && to !== '') {
+      $('input[name="daterange"]').val(moment(from).format('YYYY-MM-DD HH:mm') + " 至 " + moment(to).format('YYYY-MM-DD HH:mm'));
+    } else {
+      $('input[name="daterange"]').val('选择时间');
+    }
+  }
+
+  var lineChart = echarts.init(document.getElementById('lineChart'));
+  var colors = ['#d14a61','#5793f3','#675bba'];
+  var option = {
+        color: colors,
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+                type: 'cross'
+            }
+        },
+        legend: {
+            data:['综合得分','智能得分','人工得分']
+        },
+        grid: {
+            top: 70,
+            bottom: 50
+        },
+        xAxis: [
+            {
+                type: 'category',
+                axisTick: {
+                    alignWithLabel: true
+                },
+                axisLine: {
+                    onZero: false,
+                },
+                data: ["2016-1", "2016-2", "2016-3", "2016-4", "2016-5", "2016-6", "2016-7", "2016-8", "2016-9", "2016-10", "2016-11", "2016-12"]
+            }
+        ],
+        yAxis:{
+          name:"分数",
+          type: 'value',
+          max:100
+        },
+        series: [
+            {
+                name:'综合得分',
+                type:'line',
+                smooth: true,
+                data: [80, 90, 65, 70, 60, 55, 85, 95, 75, 40, 45, 50]
+            },
+            {
+                name:'智能得分',
+                type:'line',
+                smooth: true,
+                data: [50, 60, 45, 45, 40, 25, 35, 55, 60, 13, 24, 30]
+            },
+            {
+                name:'人工得分',
+                type:'line',
+                smooth: true,
+                data: [30, 30, 20, 25, 20, 30, 50, 40, 25, 27, 21, 20]
+            }
+        ]
+    };
+    lineChart.setOption(option);
+    $(window).resize(function(){
+      lineChart.resize()
+    })
+    $("#sideBtn").click(function(){
+      setTimeout(function(){
+        lineChart.resize()
+      },150)
+    })
+
+var barChart = echarts.init(document.getElementById('barChart'));
+var option = {
+      tooltip : {
+          trigger: 'axis',
+          axisPointer : {            // 坐标轴指示器，坐标轴触发有效
+              type : 'shadow'        // 默认为直线，可选为：'line' | 'shadow'
+          }
+      },
+      legend: {
+          data:["快递服务中心","水电燃气服务中心","家政服务中心","外卖服务中心","电话销售中心","客服中心","信用卡客服中心",'其他',]
+      },
+      grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          containLabel: true
+      },
+      xAxis : [
+          {
+              type : 'category',
+              data : ['周一','周二','周三','周四','周五','周六','周日']
+          }
+      ],
+      yAxis : [
+          {
+            name: "任务数",
+            type : 'value'
+          }
+      ],
+      series : [
+          {
+            name:'快递服务中心',
+            type:'bar',
+            data:[320, 332, 301, 334, 390, 330, 320]
+          },
+          {
+            name:'水电燃气服务中心',
+            type:'bar',
+            data:[120, 132, 101, 134, 90, 230, 210]
+          },
+          {
+            name:'家政服务中心',
+            type:'bar',
+            data:[220, 182, 191, 234, 290, 330, 310]
+          },
+          {
+            name:'外卖服务中心',
+            type:'bar',
+            data:[150, 232, 201, 154, 190, 330, 410]
+          },
+          {
+            name:'电话销售中心',
+            type:'bar',
+            data:[862, 1018, 964, 1026, 1679, 1600, 1570]
+          },
+          {
+            name:'客服中心',
+            type:'bar',
+            data:[620, 732, 701, 734, 1090, 1130, 1120]
+          },
+          {
+            name:'信用卡客服中心',
+            type:'bar',
+            data:[120, 132, 101, 134, 290, 230, 220]
+          },
+          {
+            name:'其他',
+            type:'bar',
+            data:[62, 82, 91, 84, 109, 110, 120]
+          }
+      ]
+  };
+  barChart.setOption(option);
+  $(window).resize(function(){
+    barChart.resize()
+  });
+  $("#sideBtn").click(function(){
+    setTimeout(function(){
+      barChart.resize()
+    },150)
+  })
+
+var pieChart2 = echarts.init(document.getElementById('pieChart2'));
+var option = {
+      tooltip: {
+          trigger: 'item',
+          formatter: "{a} <br/>{b}: {c} ({d}%)"
+      },
+      legend: {
+          orient: 'vertical',
+          x: 'left',
+          data:['静音超长且未关怀','语速过快/过慢质检','抢插话','未及时响应客户需求','服务忌语','开头/结束语不规范','未按标准话术','未取消挽留','未确认办理','其他']
+      },
+      series: [
+          {
+              name:'违规占比',
+              type:'pie',
+              selectedMode: 'single',
+              radius: [0, '30%'],
+              center : ['37%', '50%'],
+              label: {
+                  normal: {
+                      position: 'inner'
+                  }
+              },
+              labelLine: {
+                  normal: {
+                      show: false
+                  }
+              },
+              data:[
+                  {value:1548, name:'服务忌语', selected:true},
+                  {value:679, name:'未取消挽留'},
+                  {value:335, name:'抢插话'}
+              ]
+          },
+          {
+              name:'违规占比',
+              type:'pie',
+              radius: ['40%', '55%'],
+              center : ['37%', '50%'],
+              data:[
+                  {value:335, name:'未及时响应客户需求'},
+                  {value:310, name:'静音超长且未关怀'},
+                  {value:135, name:'开头/结束语不规范'},
+                  {value:1048, name:'未按标准话术'},
+                  {value:251, name:'语速过快/过慢质检'},
+                  {value:147, name:'未确认办理'},
+                  {value:102, name:'其他'}
+              ]
+          },
+          {
+              name:'违规占比',
+              type:'pie',
+              selectedMode: 'single',
+              radius: [0, '50%'],
+              center : ['80%', '50%'],
+              label: {
+                  normal: {
+                      position: 'inner'
+                  }
+              },
+              labelLine: {
+                  normal: {
+                      show: false
+                  }
+              },
+              data:[
+                  {value:335, name:'您好', selected:true},
+                  {value:679, name:'你好'},
+                  {value:1548, name:'早上好'}
+              ]
+          }
+      ]
+  };
+  pieChart2.setOption(option);
+  $(window).resize(function(){
+    pieChart2.resize()
+  });
+  $("#sideBtn").click(function(){
+    setTimeout(function(){
+      pieChart2.resize()
+    },150)
+  })
+</script>

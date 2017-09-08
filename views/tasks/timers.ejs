@@ -1,0 +1,461 @@
+<style>
+.autotaskTable td,.autotaskTable th{
+    text-align: center !important;
+}
+</style>
+
+<button id='addBtn' class='ui blue button'><i class="plus icon"></i>添加</button>
+
+<div class="ui grey segment tablebox" style="box-shadow:0 0 0 0;">
+    <table class='ui small very basic table autotaskTable'>
+        <thead>
+            <tr>
+                <th>序号</th>
+                <th>所属业务</th>
+                <th>分配人员</th>
+                <th>分配数量</th>
+                <th>计划状态</th>
+                <th>开始日期</th>
+                <th>结束日期</th>
+                <th>时间点</th>
+                <th>完成期限</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            <%
+              if (rows && rows.length > 0) {
+              %>
+              <%
+                for (var i in rows) {
+                  var row = rows[i];
+                  var plan_status;
+                  if(row['plan_status']===0){
+                      plan_status = '未启用'
+                  }else if(row['plan_status']===1){
+                      plan_status = '启用'
+                  }
+              %>
+                <tr>
+                  <td data-id="<%=row['id']%>">
+                      <%=parseInt(offset)+parseInt(i)+1%>
+                  </td>
+                  <td class='sysName'>
+                    <%=row['source_system']%>
+                  </td>
+                  <td class='person'>
+                    <%
+                    var person=row['assign_person'].split(',');
+                    var newPerson=[];
+                    for(var i in person){
+                      for (var j in userList) {
+                        if(person[i]==userList[j]['_id']){
+                          newPerson.push(userList[j]['username'])
+                        }
+                      }
+                    }
+                    %>
+                    <%=newPerson.join()%>
+                  </td>
+                  <td class='disNum'>
+                    <%=row['assign_mumber']%>
+                  </td>
+                  <td class='state'>
+                    <%=plan_status%>
+                  </td>
+                  <td class='stDate'>
+                    <%=common.format_date(row['stat_date'], 'yyyy-MM-dd hh:mm:ss')%>
+                  </td>
+                  <td class='edDate'>
+                    <%=common.format_date(row['end_date'], 'yyyy-MM-dd hh:mm:ss')%>
+                  </td>
+                  <td class='point'>
+                    <%=row['date_polt']%>
+                  </td>
+                  <td class='term'>
+                    <%=row['complete_days']%>
+                  </td>
+                  <td><a class='editBtn' href="javascript:;" onclick="editBtn(<%=JSON.stringify(row)%>)">编辑</a>&nbsp;&nbsp;<a href="javascript:;" class='delBtn' onclick="del('<%=row['id']%>')">删除</a></td>
+                </tr>
+                <%
+                }
+                %>
+
+                <% } else { %>
+                <tr>
+                  <td colspan="10" style="text-align:center;">暂无数据</td>
+                </tr>
+                <% } %>
+        </tbody>
+    </table>
+</div>
+
+<%-common.paging("/tasks/timers","", totalPage, offset, limit, 5)%>
+
+<div class="ui modal addModal" data-operator='<%=operator%>'>
+    <i class="close icon"></i>
+  <div class="header">自动分配管理</div>
+  <div class="ui form" style='padding:20px;'>
+      <div class='fields'>
+          <div class="eight wide field">
+              <label class="required_input">所属业务：</label>
+              <select class='ui fluid dropdown sysNameSel'>
+                <option value="全部业务">全部业务</option>
+                <%
+                for (var i in systemList) {
+                  var _threshold = systemList[i];
+                %>
+                <option value="<%=_threshold['_id']%>"><%=_threshold['name']%></option>
+                  <%
+                }
+                %>
+              </select>
+          </div>
+          <div class="eight wide field">
+              <label class="required_input">状态：</label>
+              <select class='ui fluid dropdown stateSel'>
+                  <option value="启用">启用</option>
+                  <option value="未启用">未启用</option>
+              </select>
+          </div>
+
+      </div>
+      <div class='fields'>
+        <label class="required_input">质检组或指定分配人员选其一</label>
+      </div>
+      <div class='fields'>
+        <div class="eight wide field">
+            <label>质检组：</label>
+            <select class='ui fluid dropdown userGroupSel' onchange="userGroupChange(<%=JSON.stringify(userList)%>,this)">
+              <option value="不选择质检组">不选择质检组</option>
+              <%
+              for (var i in usergroupList) {
+                var usergroup_threshold = usergroupList[i];
+              %>
+              <option value="<%=usergroup_threshold['_id']%>"><%=usergroup_threshold['name']%></option>
+                <%
+              }
+              %>
+            </select>
+        </div>
+        <div class="eight wide field">
+            <label>分配人员：</label>
+            <select class="ui fluid dropdown search assignPerson" multiple="">
+              <%
+              for (var i in userList) {
+                var _threshold = userList[i];
+              %>
+              <option value="<%=_threshold['_id']%>" data-id="<%=_threshold['_id']%>"><%=_threshold['username']%></option>
+                <%
+              }
+              %>
+            </select>
+        </div>
+      </div>
+      <div class='fields'>
+          <div class="eight wide field">
+              <label class="required_input">开始日期：</label>
+              <input class='stDateInput' type="text">
+          </div>
+          <div class="eight wide field">
+              <label class="required_input">结束日期：</label>
+              <input class='edDateInput' type="text">
+          </div>
+      </div>
+      <div class='fields'>
+        <div class="eight wide field">
+            <label class="required_input">时间点：</label>
+            <input id="timePoint" class='pointInput' type="text">
+        </div>
+        <div class="eight wide field">
+            <label class="required_input">分配数量：</label>
+            <input class='disNumInput' type="number" placeholder="请输入分配数量">
+        </div>
+      </div>
+      <div class="fields">
+        <div class="eight wide field">
+            <label class="required_input">完成期限(天)：</label>
+            <input class='termInput' type="number">
+        </div>
+      </div>
+      <!-- <div class="field">
+          策略模型：
+          <button id="modalAddBtn" class='ui blue small button'>添加</button>
+      </div> -->
+      <div class="field strBox">
+          <!-- <div class='ui billboard'>
+                <div class='content'>
+                    <div class='fields'>
+                        <div class="six wide field">
+                            <label>检索字段：</label>
+                            <select class='ui dropdown'>
+                                <option value="0">静音比</option>
+                            </select>
+                        </div>
+                        <div class="eight wide field">
+                            <label>字段取值：</label>
+                            <div class='sixteen field inline'>
+                                <input type="text">至
+                                <input type="text">
+                            </div>
+                        </div>
+                        <div class="two wide field">
+                            <label>操作：</label>
+                            <button class='ui blue button strRemoveBtn'>删除</button>
+                        </div>
+                    </div>
+                </div>
+          </div> -->
+      </div>
+      <div class="ui hidden divider"></div>
+  </div>
+  <div class="actions">
+    <div class="ui black deny button">取消</div>
+    <div class="ui positive right labeled icon button">确定<i class="checkmark icon"></i></div>
+  </div>
+</div>
+<script>
+  $(function() {
+    activeUrl();
+  });
+$('.ui.dropdown').dropdown();
+$(".assignPerson").dropdown({
+  message:{
+    noResults:'未搜索到相关人员'
+  }
+})
+$("#timePoint").jeDate({format:"hh:mm:ss"})
+var userList_group;
+function userGroupChange(userList,dom){
+  userList_group=userList;
+  if($(dom).val()!=="不选择质检组"){
+    $(".assignPerson").addClass("disabled");
+  }else{
+    $(".assignPerson").removeClass("disabled");
+
+  }
+}
+$('.stDateInput').daterangepicker({
+    "singleDatePicker": true,
+    format : 'YYYY-MM-DD hh:mm:ss',
+    "startDate": moment().startOf('day'),
+}, function(start, end, label) {
+});
+$('.edDateInput').daterangepicker({
+    "singleDatePicker": true,
+    format : 'YYYY-MM-DD hh:mm:ss',
+    "startDate": moment().add(1, "d").startOf('day'),
+}, function(start, end, label) {
+});
+//添加按钮
+$('#addBtn').click(function(){
+    $('.ui.modal.addModal .sysNameSel').dropdown('set selected','全部业务');
+    $('.ui.modal.addModal .stateSel').dropdown('set selected','启用');
+    $('.ui.modal.addModal input').val('')
+    $(".assignPerson").dropdown('clear')
+    $('.ui.modal.addModal')
+        .modal({
+            'autofocus':false,
+             onApprove: function() {
+               var assignPersonArr=[];
+               if($(".userGroupSel .item.active.selected").attr("data-value")==="不选择质检组"){
+                 $(".assignPerson a").each(function(){
+                   assignPersonArr.push($(this).attr("data-value"));
+                 })
+               }else{
+                 for(var i in userList_group){
+                   userList_group[i]['user_group']===$(".userGroupSel .item.active.selected").attr("data-value");
+                   assignPersonArr.push(userList_group[i]["username"])
+                 }
+               }
+               var planStatus=$('.ui.modal.addModal .stateSel .text').text()==="未启用"?0:1
+                 var params = {
+                     source_system : $('.ui.modal.addModal .sysNameSel .text').text(),  //所属系统
+                     assign_person : assignPersonArr.join(),  //分配人员
+                 	assign_mumber : $('.ui.modal.addModal .disNumInput').val(),  //分配数量
+                 	plan_status   : planStatus,  //计划状态; 0:未启动；1:启动
+                 	stat_date     : moment($('.ui.modal.addModal .stDateInput').val()).utc().format('x'),  //开始日期
+                 	end_date      : moment($('.ui.modal.addModal .edDateInput').val()).utc().format('x'),  //结束日期
+                 	date_polt     : $('.ui.modal.addModal .pointInput').val(),  //时间点
+                 	complete_days : $('.ui.modal.addModal .termInput').val(),  //完成期限
+                  operator      : $('.addModal').attr("data-operator")
+                 };
+                 for(var i in params){
+                   if(i!=='operator'&&params[i]===''){
+                     swal({
+                       title: "添加失败,请完整填写全部信息",
+                       text: "",
+                       type: "error",
+                       showCancelButton: false,
+                       confirmButtonText: "确认",
+                     },
+                     function(){
+                     });
+                     return false
+                   }
+                 }
+                 $.post("/task/auto_assign", params, function(data, status) {
+                   if (status == "success") {
+                     swal({
+                       title:"操作成功!",
+                       text:'',
+                       type:'success'
+                     },function(){
+                       location.reload();
+                     })
+                   } else {
+                     alert(data);
+                   }
+                 }).error(function(err) {
+                    swal(err.responseText,"","error")
+                 });
+             }
+        })
+        .modal('show')
+    ;
+})
+//编辑
+function editBtn(row){
+    var id=row['_id'];
+    $('.ui.modal.addModal .sysNameSel').dropdown('set selected',row['source_system']);
+    var testArr=row['assign_person'].split(",");
+    // var testArr=["daixianghong","zhijianyuan"];
+    $(".assignPerson").dropdown('clear')
+    $(".assignPerson").dropdown("set selected",testArr)
+    $('.ui.modal.addModal .disNumInput').val(row['assign_mumber']);
+    $('.ui.modal.addModal .stateSel').dropdown('set selected',row['plan_status']);
+    $('.ui.modal.addModal .stDateInput').val(moment(row['stat_date']).format("YYYY-MM-DD hh:mm:ss"))
+    $('.ui.modal.addModal .edDateInput').val(moment(row['end_date']).format("YYYY-MM-DD hh:mm:ss"))
+    $('.ui.modal.addModal .pointInput').val(row['date_polt'])
+    $('.ui.modal.addModal .termInput').val(row['complete_days'])
+    $('.ui.modal.addModal')
+        .modal({
+            'autofocus':false,
+            onApprove: function() {
+              var assignPersonArr=[];
+              if($(".userGroupSel .item.active.selected").attr("data-value")==="不选择质检组"){
+                $(".assignPerson a").each(function(){
+                  assignPersonArr.push($(this).attr("data-value"));
+                })
+              }else{
+                for(var i in userList_group){
+                  userList_group[i]['user_group']===$(".userGroupSel .item.active.selected").attr("data-value");
+                  assignPersonArr.push(userList_group[i]["username"])
+                }
+              }
+              var planStatus=$('.ui.modal.addModal .stateSel .text').text()==="未启用"?0:1
+              var params = {
+                  source_system : $('.ui.modal.addModal .sysNameSel .text').text(),  //所属系统
+                  assign_person : assignPersonArr.join(),  //分配人员
+                   assign_mumber : $('.ui.modal.addModal .disNumInput').val(),  //分配数量
+                   plan_status   : planStatus,  //计划状态; 0:未启动；1:启动
+                   stat_date     : moment($('.ui.modal.addModal .stDateInput').val()).utc().format('x'),  //开始日期
+                   end_date      : moment($('.ui.modal.addModal .edDateInput').val()).utc().format('x'),  //结束日期
+                   date_polt     : $('.ui.modal.addModal .pointInput').val(),  //时间点
+                   complete_days : $('.ui.modal.addModal .termInput').val(),  //完成期限
+                   operator      : $('.addModal').attr("data-operator")
+                  };
+                  for(var i in params){
+                    if(i!=='operator'&&params[i]==''){
+                      swal({
+                        title: "添加失败,请完整填写全部信息",
+                        text: "",
+                        type: "error",
+                        showCancelButton: false,
+                        confirmButtonText: "确认",
+                      },
+                      function(){
+                      });
+                      return false
+                    }
+                  }
+                  $.ajax({
+                    type: "put",
+                    url: "/task/auto_assign/" + id,
+                    data: params,
+                    success: function(data) {},
+                    complete: function(XMLHttpRequest, status) {
+                      if (status == "success") {
+                        swal({
+                          title:"操作成功!",
+                          text:'',
+                          type:'success'
+                        },function(){
+                          location.reload();
+                        })
+                      }
+                    },
+                    error: function(err) {
+                      swal(err.responseText,"","error")
+                    }
+                  });
+
+                  return false;
+            }
+        })
+        .modal('show')
+    ;
+}
+//添加策略模型
+$('#modalAddBtn').click(function(){
+    $(".strBox").append("<div class='ui billboard'>"
+             +"<div class='content'>"
+             +"<div class='fields'>"
+                 +"<div class='six wide field'>"
+                      +"<label>检索字段：</label>"
+                      +"<select class='ui fluid dropdown'>"
+                          +"<option value='0'>静音比</option>"
+                      +"</select>"
+                  +"</div>"
+                  +"<div class='eight wide field'>"
+                      +"<label>字段取值：</label>"
+                      +"<div class='sixteen fields inline'>"
+                          +"<div class='eight field wide'><input type='text'></div>至&nbsp;&nbsp;&nbsp;"
+                          +"<div class='eight field wide'><input type='text'></div>"
+                      +"</div>"
+                  +"</div>"
+                  +"<div class='two wide field'>"
+                      +"<label>操作：</label>"
+                      +"<button class='ui blue button strRemoveBtn'>删除</button>"
+                  +"</div>"
+              +"</div>"
+          +"</div>"
+    +"</div>")
+})
+$('.strBox').delegate('.strRemoveBtn','click',function(){
+    $(this).parents('.billboard').remove();
+})
+//删除
+function del(id) {
+  swal({
+    title: "确定要删除吗?",
+    type: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#DD6B55",
+    confirmButtonText: "确定删除",
+    cancelButtonText: "取消",
+    closeOnConfirm: false
+  },
+  function(){
+    $.ajax({
+      type: "delete",
+      url: "/task/auto_assign/" + id,
+      success: function(data) {},
+      complete: function(XMLHttpRequest, status) {
+        if (status == "success") {
+          swal({
+            title:"操作成功!",
+            text:'',
+            type:'success'
+          },function(){
+            location.reload();
+          })
+        }
+      },
+      error: function(err) {
+        swal(err.responseText,"","error")
+      }
+    });
+  })
+}
+</script>
